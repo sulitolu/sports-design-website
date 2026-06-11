@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useLenis } from "lenis/react";
 import { cta, site } from "@/data/content";
 import { Reveal } from "./reveal";
@@ -69,7 +70,14 @@ export default function CtaFooter() {
         </Reveal>
       </div>
 
-      <div className="border-t border-line px-6 py-6 sm:px-10">
+      <div className="flex items-center justify-between border-t border-line px-6 py-6 sm:px-10">
+        <Image
+          src="/brand/icon.png"
+          alt=""
+          width={28}
+          height={28}
+          className="h-6 w-6 sm:h-7 sm:w-7"
+        />
         <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted">
           © {new Date().getFullYear()} {site.name}. All rights reserved.
         </p>

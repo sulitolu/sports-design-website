@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { nav } from "@/data/content";
 import { EASE_OUT } from "@/lib/motion";
@@ -43,11 +44,15 @@ export default function Navbar() {
     <>
       <header className="sticky top-0 z-50 border-b border-line bg-ink/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 sm:px-10">
-          <a
-            href="#top"
-            className="font-display text-sm font-bold tracking-[0.3em] text-paper"
-          >
-            {nav.shortmark}
+          <a href="#top" className="flex items-center" aria-label={nav.wordmark}>
+            <Image
+              src="/brand/icon.png"
+              alt=""
+              width={36}
+              height={36}
+              priority
+              className="h-8 w-8 sm:h-9 sm:w-9"
+            />
           </a>
 
           <nav

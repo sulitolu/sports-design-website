@@ -1,9 +1,16 @@
 import { ImageResponse } from "next/og";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default function Image() {
+  const iconBuffer = readFileSync(
+    join(process.cwd(), "public/brand/icon-512.png")
+  );
+  const iconSrc = `data:image/png;base64,${iconBuffer.toString("base64")}`;
+
   return new ImageResponse(
     (
       <div
@@ -19,12 +26,15 @@ export default function Image() {
           fontFamily: "sans-serif",
         }}
       >
+        <img src={iconSrc} width={120} height={120} alt="" />
         <div
           style={{
-            fontSize: 24,
-            letterSpacing: 8,
+            fontSize: 20,
+            letterSpacing: 4,
             color: "#FF3B1F",
             fontWeight: 700,
+            marginTop: 36,
+            whiteSpace: "nowrap",
           }}
         >
           CINEMATIC FILM / ATHLETE BRANDING / SOCIAL CONTENT

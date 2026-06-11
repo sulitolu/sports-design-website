@@ -73,12 +73,30 @@ export const cta = {
 };
 ```
 
+## Brand assets
+
+`public/brand/` holds the processed logo:
+
+- `logo.png` — original source artwork (cream background).
+- `icon.png` / `icon-512.png` — circular play-button mark with the
+  background removed, used in the navbar and footer.
+- `wordmark-dark.png` / `lockup-dark.png` — the "SPORTS DESIGN JAPAN"
+  wordmark recolored to off-white with transparent letterforms, and a
+  combined icon + wordmark lockup, available for future use (e.g. the
+  preloader or a larger hero lockup).
+
+`app/favicon.ico` and `app/apple-icon.png` are generated from `icon.png`. To
+update the branding, replace `public/brand/logo.png` and regenerate these
+derived assets.
+
 ## Favicon & social preview
 
-- `app/favicon.ico` is the browser tab icon — replace with your own `.ico`.
+- `app/favicon.ico` and `app/apple-icon.png` are generated from the brand icon
+  — replace with your own if the branding changes.
 - `app/opengraph-image.tsx` generates the social share image (1200×630) at build
-  time using `next/og`. Edit the JSX/styles there to match real branding, or
-  replace the file with a static `opengraph-image.png` in `app/`.
+  time using `next/og`, embedding `public/brand/icon-512.png`. Edit the
+  JSX/styles there to match real branding, or replace the file with a static
+  `opengraph-image.png` in `app/`.
 
 ## Accessibility & motion
 
