@@ -115,6 +115,24 @@ export default function Hero() {
       onMouseMove={isFinePointer ? handleMouseMove : undefined}
       onMouseLeave={isFinePointer ? handleMouseLeave : undefined}
     >
+      {/*
+        ── Hidden logo — same centre as the concentric circles (50% / 50%),
+        sized to match the second ring (r=300 → 600px diameter).
+        Fully invisible by default; cursor reveal opens a soft mask hole.
+      */}
+      <div
+        ref={logoRevealRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        style={{
+          width: 600, height: 600,
+          WebkitMaskImage: LOGO_MASK_OFF,
+          maskImage: LOGO_MASK_OFF,
+        }}
+      >
+        <Image src="/brand/icon-512.png" fill alt="" className="object-contain" />
+      </div>
+
       {/* ── Concentric rings ── */}
       <motion.div
         aria-hidden="true"
@@ -173,25 +191,6 @@ export default function Hero() {
 
         {/* ── Type block — logo hidden behind, revealed at cursor ── */}
         <div className="relative w-full text-center">
-
-          {/*
-            Logo layer — sits behind all text, fully hidden by a transparent mask.
-            On cursor move, mask opens a circle to reveal the logo locally.
-            fill + object-contain = sized to match the text container.
-          */}
-          <div
-            ref={logoRevealRef}
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0"
-            style={{ WebkitMaskImage: LOGO_MASK_OFF, maskImage: LOGO_MASK_OFF }}
-          >
-            <Image
-              src="/brand/icon-512.png"
-              fill
-              alt=""
-              className="object-contain"
-            />
-          </div>
 
           {/* Type — rendered above the logo in DOM order */}
           <h1 className="font-display uppercase tracking-[-0.04em] leading-[0.82]">
