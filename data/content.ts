@@ -8,6 +8,7 @@ export const nav = {
     { label: "Work", jp: "制作実績", href: "#work" },
     { label: "Services", jp: "サービス", href: "#services" },
     { label: "About", jp: "私たちについて", href: "#about" },
+    { label: "Athletes", jp: "選手", href: "#athletes" },
     { label: "Contact", jp: "お問い合わせ", href: "#contact" },
   ],
 };
@@ -19,8 +20,6 @@ export const hero = {
     jp: "映像制作 / アスリートブランディング",
   },
   scrollLabel: "SCROLL",
-  videoNote:
-    "Drop a looping, muted .mp4 (match day / training footage) at /public/video/hero-loop.mp4",
 };
 
 export const marquee = {
@@ -38,6 +37,10 @@ export type WorkProject = {
   category: string;
   year: string;
   timecode: string;
+  media?: {
+    video: string;
+    poster: string;
+  };
 };
 
 export const work = {
@@ -58,6 +61,10 @@ export const work = {
       category: "Athlete Branding",
       year: "2024",
       timecode: "00:00:58:21",
+      media: {
+        video: "/video/work-athlete-brand.mp4",
+        poster: "/images/work-athlete-brand-poster.jpg",
+      },
     },
     {
       title: "Season Hype Reel",
@@ -72,6 +79,10 @@ export const work = {
       category: "Social Content",
       year: "2023",
       timecode: "00:00:32:05",
+      media: {
+        video: "/video/work-social-training.mp4",
+        poster: "/images/work-social-training-poster.jpg",
+      },
     },
     {
       title: "Pre-Season Documentary",
@@ -79,6 +90,10 @@ export const work = {
       category: "Cinematic Film",
       year: "2023",
       timecode: "00:04:11:00",
+      media: {
+        video: "/video/work-preseason-doc.mp4",
+        poster: "/images/work-preseason-doc-poster.jpg",
+      },
     },
     {
       title: "Brand Identity Launch",
@@ -86,6 +101,10 @@ export const work = {
       category: "Athlete Branding",
       year: "2022",
       timecode: "00:01:05:17",
+      media: {
+        video: "/video/work-brand-identity.mp4",
+        poster: "/images/work-brand-identity-poster.jpg",
+      },
     },
   ] satisfies WorkProject[],
 };
@@ -159,13 +178,53 @@ export const about = {
   ],
 };
 
+export type Athlete = {
+  name: string;
+  position: string;
+  photo: string;
+};
+
+export const athletes = {
+  heading: { en: "Athletes", jp: "選手" },
+  eyebrow: "NEC GREEN ROCKETS",
+  intro:
+    "Personal brand films and content built for players from NEC Green Rockets, Japan Rugby League One.",
+  roster: [
+    {
+      name: "Player 01",
+      position: "Position TBD",
+      photo: "/images/athletes/athlete-01.jpg",
+    },
+    {
+      name: "Player 02",
+      position: "Position TBD",
+      photo: "/images/athletes/athlete-02.jpg",
+    },
+    {
+      name: "Player 03",
+      position: "Position TBD",
+      photo: "/images/athletes/athlete-03.jpg",
+    },
+    {
+      name: "Player 04",
+      position: "Position TBD",
+      photo: "/images/athletes/athlete-04.jpg",
+    },
+    {
+      name: "Player 05",
+      position: "Position TBD",
+      photo: "/images/athletes/athlete-05.jpg",
+    },
+  ] satisfies Athlete[],
+};
+
 export const cta = {
   heading: { en: "LET'S CREATE", jp: "一緒に作りましょう" },
   body: "Have a project, a season, or a story worth telling? Let's talk.",
   email: "hello@sportsdesignjapan.com",
   instagram: {
-    handle: "@sportsdesignjapan",
-    url: "https://instagram.com/sportsdesignjapan",
+    handle: "@sports_designjp",
+    url: "https://instagram.com/sports_designjp",
   },
   backToTop: "BACK TO TOP",
 };

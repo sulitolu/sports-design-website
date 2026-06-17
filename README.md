@@ -40,23 +40,61 @@ copy changes.
 
 ## Swapping in real videos
 
-- **Hero background video**: `components/hero.tsx` has a commented-out `<video>`
-  block inside the "Background video placeholder" section. Drop your file at
-  `public/video/hero-loop.mp4` (muted, looping, ~10s, compressed for web), then
-  uncomment the `<video>` element and remove the gradient placeholder div above it.
-- **Work cards**: `components/work-card.tsx` currently renders a colored gradient
-  + grain texture per project. To use real footage/stills, replace the
-  `motion.div` gradient background with an `<img>`/`<video>` (or
-  `next/image`/`next/video`) sized to fill the `aspect-[4/3] sm:aspect-[21/9]`
-  container, keeping the `grain-bg` overlay and parallax `style={{ y }}` for the
-  same effect. Add a `media` field per project in `data/content.ts` to point at
-  your asset paths.
+- **Hero background video**: `components/hero.tsx` renders
+  `public/video/hero-loop.mp4` (muted, looping, ~10s, sourced from training
+  footage) with `public/images/hero-poster.jpg` as the poster frame and the
+  reduced-motion fallback. To swap in a different clip, drop a new file at
+  `public/video/hero-loop.mp4` and re-extract a poster frame, e.g.:
+
+  ```bash
+  ffmpeg -i input.mp4 -an -t 10 -c:v libx264 -crf 23 -preset slow \
+    -movflags +faststart public/video/hero-loop.mp4
+  ffmpeg -i public/video/hero-loop.mp4 -frames:v 1 -q:v 2 \
+    public/images/hero-poster.jpg
+  ```
+
+  Other downloaded candidate clips (if any) live in
+  `media-source/instagram/` (gitignored) — re-run the commands above against
+  a different source file to try another clip.
+- **Work cards**: `components/work-card.tsx` shows a static poster image by
+  default for any project with a `media: { video, poster }` field in
+  `data/content.ts` — four of the six projects currently point at clips in
+  `public/video/work-*.mp4` / `public/images/work-*-poster.jpg`. The video
+  (`preload="metadata"` only, so the full clip isn't fetched upfront) plays on
+  hover on devices with a mouse, or while the card is scrolled into view on
+  touch devices, and pauses otherwise. Projects without a `media` field fall
+  back to the colored gradient + grain texture. To swap or add footage,
+  process a source clip the same way as the hero loop:
+
+  ```bash
+  ffmpeg -ss <start> -i input.mp4 -an -t 10 -c:v libx264 -crf 23 -preset slow \
+    -movflags +faststart public/video/work-<name>.mp4
+  ffmpeg -ss 2 -i public/video/work-<name>.mp4 -frames:v 1 -q:v 2 \
+    public/images/work-<name>-poster.jpg
+  ```
+
+  Add `transpose=2` (or `transpose=1`, depending on source) to the `-vf` filter
+  if a source clip was recorded sideways. Then add the matching `media` object
+  to the project in `data/content.ts`.
 
 ## Swapping in real photos
 
 Place images in `public/` (e.g. `public/images/...`) and reference them with
 `next/image` for automatic optimization. Good candidates: work card thumbnails
 (see above) and any future imagery in the About section.
+
+- **Athletes section**: `components/athletes.tsx` renders a grid of player
+  portraits from `athletes.roster` in `data/content.ts`, each with a
+  `{ name, position, photo }` entry pointing at
+  `public/images/athletes/athlete-0N.jpg`. The current roster (5 NEC Green
+  Rockets players) uses placeholder names (`Player 01`–`05`) and
+  `"Position TBD"` — update these fields with real names and rugby positions
+  (prop, lock, hooker, etc.) once available. Source portraits were resized to
+  800px wide with:
+
+  ```bash
+  ffmpeg -i input.jpg -vf "scale=800:-1" -q:v 3 public/images/athletes/athlete-0N.jpg
+  ```
 
 ## Updating contact details
 
@@ -68,7 +106,7 @@ export const cta = {
   heading: "LET'S CREATE",
   ...
   email: "hello@sportsdesignjapan.com",
-  instagram: "@sportsdesignjapan",
+  instagram: { handle: "@sports_designjp", url: "https://instagram.com/sports_designjp" },
   ...
 };
 ```

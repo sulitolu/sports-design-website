@@ -21,7 +21,7 @@ export default function CtaFooter() {
       <div className="mx-auto max-w-7xl px-6 py-24 sm:px-10 sm:py-32">
         <Reveal>
           <h2 className="font-display font-extrabold uppercase leading-[0.95] tracking-[-0.03em] text-paper">
-            <span className="block text-[clamp(2.5rem,11vw,9rem)]">
+            <span className="block text-[clamp(2.75rem,13vw,11rem)]">
               {cta.heading.en}
             </span>
             <span className="mt-2 block font-jp text-[clamp(1.25rem,5vw,3rem)] font-medium text-accent">

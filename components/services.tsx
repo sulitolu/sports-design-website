@@ -15,7 +15,7 @@ export default function Services() {
       className="mx-auto max-w-7xl px-6 py-24 sm:px-10 sm:py-32"
     >
       <Reveal>
-        <h2 className="font-display text-4xl font-extrabold uppercase tracking-tight text-paper sm:text-6xl">
+        <h2 className="font-display text-5xl font-extrabold uppercase tracking-[-0.04em] leading-[0.95] text-paper sm:text-7xl lg:text-8xl">
           {services.heading.en}
           <span className="ml-4 align-middle font-jp text-lg font-normal text-muted">
             {services.heading.jp}

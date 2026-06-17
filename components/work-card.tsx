@@ -1,16 +1,18 @@
 "use client";
 
-import { useRef } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import type { WorkProject } from "@/data/content";
+import { useMediaQuery } from "@/lib/use-media-query";
 
 const GRADIENTS = [
-  "from-[#3a1f1a] via-ink to-ink",
-  "from-[#1a2a3a] via-ink to-ink",
-  "from-[#2a1a3a] via-ink to-ink",
-  "from-[#1a3a2a] via-ink to-ink",
-  "from-[#3a2a1a] via-ink to-ink",
-  "from-[#1a1a3a] via-ink to-ink",
+  "from-[#11131a] via-ink to-ink",
+  "from-[#d6e4ff] via-ink to-ink",
+  "from-[#0046ff]/12 via-ink to-ink",
+  "from-[#1c1f26] via-ink to-ink",
+  "from-[#e3e8f5] via-ink to-ink",
+  "from-[#15171d] via-ink to-ink",
 ];
 
 export default function WorkCard({
@@ -26,20 +28,61 @@ export default function WorkCard({
     offset: ["start end", "end start"],
   });
   const y = useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]);
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const canHover = useMediaQuery("(hover: hover)");
+  const isInView = useInView(ref, { amount: 0.5 });
+  const [isHovering, setIsHovering] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const shouldPlay = !reducedMotion && (canHover ? isHovering : isInView);
+  const { media } = project;
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (shouldPlay) {
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
+  }, [shouldPlay]);
 
   return (
     <article ref={ref} className="group border-t border-line py-8 sm:py-12">
       <div
         data-cursor="view"
-        className="relative aspect-[4/3] overflow-hidden rounded-sm bg-ink sm:aspect-[21/9]"
+        className="relative aspect-[4/3] overflow-hidden clip-diagonal bg-ink sm:aspect-[21/9]"
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
       >
         <motion.div
-          className={`absolute inset-x-0 -top-[10%] -bottom-[10%] bg-gradient-to-br ${
-            GRADIENTS[index % GRADIENTS.length]
-          } transition-transform duration-700 ease-out group-hover:scale-105`}
+          className="absolute inset-x-0 -top-[10%] -bottom-[10%] overflow-hidden transition-transform duration-700 ease-out group-hover:scale-105"
           style={{ y }}
-        />
-        <div className="grain-bg absolute inset-0 opacity-25 mix-blend-overlay" />
+        >
+          {media ? (
+            reducedMotion ? (
+              <Image src={media.poster} alt="" fill className="object-cover" />
+            ) : (
+              <video
+                ref={videoRef}
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                poster={media.poster}
+                className="h-full w-full object-cover"
+              >
+                <source src={media.video} type="video/mp4" />
+              </video>
+            )
+          ) : (
+            <div
+              className={`h-full w-full bg-gradient-to-br ${GRADIENTS[index % GRADIENTS.length]}`}
+            />
+          )}
+        </motion.div>
+        {media && (
+          <div className="absolute inset-0 bg-gradient-to-b from-ink/50 via-transparent to-ink/30" />
+        )}
         <div className="absolute left-4 top-4 font-mono text-xs tracking-widest text-paper/70 sm:left-6 sm:top-6">
           {project.timecode}
         </div>
@@ -47,7 +90,7 @@ export default function WorkCard({
 
       <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h3 className="font-display text-2xl font-bold uppercase tracking-tight text-paper sm:text-4xl">
+          <h3 className="font-display text-3xl font-bold uppercase tracking-tight text-paper sm:text-5xl">
             {project.title}
           </h3>
           <p className="mt-1 text-sm text-muted">{project.client}</p>

@@ -5,6 +5,7 @@ import Marquee from "@/components/marquee";
 import SelectedWork from "@/components/selected-work";
 import Services from "@/components/services";
 import About from "@/components/about";
+import Athletes from "@/components/athletes";
 import CtaFooter from "@/components/cta-footer";
 
 export default function Home() {
@@ -18,6 +19,7 @@ export default function Home() {
         <SelectedWork />
         <Services />
         <About />
+        <Athletes />
       </main>
       <CtaFooter />
     </>

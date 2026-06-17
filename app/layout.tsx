@@ -3,7 +3,6 @@ import { Poppins, Noto_Sans_JP, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import SmoothScroll from "@/components/smooth-scroll";
 import CustomCursor from "@/components/custom-cursor";
-import GrainOverlay from "@/components/grain-overlay";
 import { LoadingProvider } from "@/components/loading-context";
 
 const poppins = Poppins({
@@ -66,7 +65,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0b",
+  themeColor: "#f4f3ef",
   width: "device-width",
   initialScale: 1,
 };
@@ -85,7 +84,6 @@ export default function RootLayout({
         <LoadingProvider>
           <SmoothScroll>{children}</SmoothScroll>
           <CustomCursor />
-          <GrainOverlay />
         </LoadingProvider>
       </body>
     </html>

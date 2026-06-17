@@ -13,7 +13,7 @@ export default function About() {
           <p className="font-mono text-xs uppercase tracking-[0.3em] text-accent">
             {about.eyebrow}
           </p>
-          <h2 className="mt-4 font-display text-4xl font-extrabold uppercase tracking-tight text-paper sm:text-6xl">
+          <h2 className="mt-4 font-display text-5xl font-extrabold uppercase tracking-[-0.04em] leading-[0.95] text-paper sm:text-7xl lg:text-8xl">
             {about.heading.en}
             <span className="ml-4 align-middle font-jp text-lg font-normal text-muted">
               {about.heading.jp}

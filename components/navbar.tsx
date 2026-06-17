@@ -117,7 +117,7 @@ export default function Navbar() {
                   href={link.href}
                   onClick={() => setOpen(false)}
                   variants={linkVariants}
-                  className="font-display text-4xl font-extrabold uppercase tracking-tight text-paper"
+                  className="font-display text-5xl font-extrabold uppercase tracking-[-0.04em] text-paper sm:text-6xl"
                 >
                   {link.label}
                   <span className="ml-3 font-jp text-base font-normal text-muted">

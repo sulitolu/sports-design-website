@@ -9,7 +9,7 @@ export default function SelectedWork() {
       className="mx-auto max-w-7xl px-6 py-24 sm:px-10 sm:py-32"
     >
       <Reveal className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <h2 className="font-display text-4xl font-extrabold uppercase tracking-tight text-paper sm:text-6xl">
+        <h2 className="font-display text-5xl font-extrabold uppercase tracking-[-0.04em] leading-[0.95] text-paper sm:text-7xl lg:text-8xl">
           {work.heading.en}
           <span className="ml-4 align-middle font-jp text-lg font-normal text-muted">
             {work.heading.jp}

@@ -1,10 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import { motion, type Variants } from "framer-motion";
 import { useLoading } from "./loading-context";
 import { hero } from "@/data/content";
 import ScrollIndicator from "./scroll-indicator";
 import { EASE_OUT } from "@/lib/motion";
+import { useMediaQuery } from "@/lib/use-media-query";
 
 const lineVariants: Variants = {
   hidden: { y: "110%" },
@@ -26,31 +28,43 @@ const fadeVariants: Variants = {
 export default function Hero() {
   const { loaded } = useLoading();
   const animate = loaded ? "visible" : "hidden";
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
 
   return (
     <section
       id="top"
-      className="relative flex min-h-svh flex-col justify-end overflow-hidden border-b border-line"
+      className="relative isolate flex min-h-svh flex-col justify-end overflow-hidden border-b border-line"
     >
-      {/* Background video placeholder */}
-      <div className="absolute inset-0 -z-10">
-        {/*
-          TODO: Replace this placeholder with a looping muted background video:
-          <video autoPlay muted loop playsInline className="h-full w-full object-cover">
+      <div className="absolute inset-0 -z-10 clip-diagonal">
+        {reducedMotion ? (
+          <Image
+            src="/images/hero-poster.jpg"
+            alt=""
+            fill
+            priority
+            className="object-cover"
+          />
+        ) : (
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            poster="/images/hero-poster.jpg"
+            className="h-full w-full object-cover"
+          >
             <source src="/video/hero-loop.mp4" type="video/mp4" />
           </video>
-          See data/content.ts -> hero.videoNote for the expected file path.
-        */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#1c1c1f] via-ink to-ink" />
-        <div className="grain-bg absolute inset-0 opacity-30 mix-blend-overlay" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-b from-paper/0 via-paper/10 to-paper/60" />
       </div>
 
       <div className="flex flex-1 flex-col justify-center px-6 pt-36 sm:px-10">
-        <h1 className="font-display font-extrabold uppercase leading-[0.88] tracking-[-0.04em] text-paper">
+        <h1 className="font-display font-extrabold uppercase leading-[0.88] tracking-[-0.04em] text-ink">
           {hero.lines.map((line, i) => (
             <span key={line} className="block overflow-hidden">
               <motion.span
-                className="block text-[clamp(2.75rem,13vw,11rem)]"
+                className="block text-[clamp(3rem,15vw,13rem)]"
                 custom={i}
                 initial="hidden"
                 animate={animate}
@@ -64,7 +78,7 @@ export default function Hero() {
       </div>
 
       <motion.div
-        className="flex flex-col gap-6 border-t border-line px-6 py-6 sm:flex-row sm:items-end sm:justify-between sm:px-10"
+        className="flex flex-col gap-6 border-t border-line bg-ink px-6 py-6 sm:flex-row sm:items-end sm:justify-between sm:px-10"
         initial="hidden"
         animate={animate}
         variants={fadeVariants}

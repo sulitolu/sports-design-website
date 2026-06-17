@@ -2,12 +2,12 @@
 
 @theme inline {
   /* Color tokens */
-  --color-ink: #0a0a0b;
-  --color-paper: #f5f5f2;
-  --color-accent: #ff3b1f;
-  --color-muted: #8a8a8e;
-  --color-line: rgb(245 245 242 / 12%);
-  --color-line-strong: rgb(245 245 242 / 20%);
+  --color-ink: #f4f3ef;
+  --color-paper: #0d0d10;
+  --color-accent: #0046ff;
+  --color-muted: #6b6b70;
+  --color-line: rgb(13 13 16 / 10%);
+  --color-line-strong: rgb(13 13 16 / 22%);
 
   /* Type tokens */
   --font-display: var(--font-poppins), "Helvetica Neue", Arial, sans-serif;
@@ -51,21 +51,15 @@ body {
   outline-offset: 3px;
 }
 
-/* Grain overlay — fixed, full-viewport noise texture for cinematic texture */
-.grain-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  pointer-events: none;
-  opacity: 0.05;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+/* Diagonal-cut clip path used on the hero background and work-card media frames */
+.clip-diagonal {
+  clip-path: polygon(0 0, 100% 0, 100% 92%, 0 100%);
 }
 
-/* Reusable film-grain texture for section backgrounds (e.g. hero placeholder) */
-.grain-bg {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 200px 200px;
+@media (max-width: 640px) {
+  .clip-diagonal {
+    clip-path: polygon(0 0, 100% 0, 100% 96%, 0 100%);
+  }
 }
 
 /* Custom cursor — only enabled on fine-pointer (non-touch) devices via JS */
