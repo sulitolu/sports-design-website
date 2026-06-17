@@ -169,19 +169,24 @@ export default function WaxReveal() {
     ro.observe(cv);
 
     // ── Logo texture ───────────────────────────────────────────────────────
+    // Use the 1024×1024 source so Retina screens never have to upsample
     const tex = gl.createTexture();
     const img = new window.Image();
-    img.src   = "/brand/icon-512.png";
+    img.src   = "/brand/logo.png";
     img.onload = () => {
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, tex);
-      // Flip Y so image top maps to WebGL top (high-y)
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      // Trilinear filtering — smooth at all sizes, no mip-seam transitions
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      // Anisotropic filtering if available — sharpens texture at oblique angles
+      const ani = gl.getExtension("EXT_texture_filter_anisotropic");
+      if (ani) gl.texParameterf(gl.TEXTURE_2D, ani.TEXTURE_MAX_ANISOTROPY_EXT, 4);
     };
 
     // ── Cursor trail ───────────────────────────────────────────────────────

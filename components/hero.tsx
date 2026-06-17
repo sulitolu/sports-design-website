@@ -112,7 +112,7 @@ export default function Hero() {
         style={{ width: 600, height: 600 }}
       >
         <Image
-          src="/brand/icon-512.png" fill alt=""
+          src="/brand/logo.png" fill alt=""
           className="object-contain opacity-[0.06]"
         />
       </div>
