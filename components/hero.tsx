@@ -8,27 +8,13 @@ import { hero } from "@/data/content";
 import ScrollIndicator from "./scroll-indicator";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { EASE_OUT } from "@/lib/motion";
+import WaxReveal from "./wax-reveal";
 
-// Text mask — fully black = top layer fully visible (original colour)
+// Text top-layer mask — black = fully visible (original colour)
 const TEXT_MASK_OFF = `radial-gradient(circle 0px at -9999px -9999px, transparent 0%, black 0%)`;
-// Logo reveal mask — fully transparent = logo hidden
-const LOGO_MASK_OFF = `linear-gradient(transparent, transparent)`;
 
-// Logo reveal: crisp 95px core then a 5-stop cubic-ease falloff to 0 at 175px.
-// Multiple stops approximate a smooth S-curve so the edge looks organic, not like
-// a CSS circle stamp.
-const logoRevealMask = (x: number, y: number) =>
-  `radial-gradient(circle at ${x}px ${y}px,
-    black        0px,
-    black        95px,
-    rgba(0,0,0,0.88) 115px,
-    rgba(0,0,0,0.60) 135px,
-    rgba(0,0,0,0.28) 153px,
-    rgba(0,0,0,0.07) 167px,
-    transparent  175px
-  )`;
-
-// Text mask: punch a hole at cursor so the reveal-colour layer shows through.
+// Punch a cursor-shaped hole in the top text layer so the colour below shows through.
+// Multi-stop approximates a smooth ease curve rather than a hard ring.
 const textRevealMask = (x: number, y: number) =>
   `radial-gradient(circle at ${x}px ${y}px,
     transparent  0px,
@@ -40,15 +26,15 @@ const textRevealMask = (x: number, y: number) =>
   )`;
 
 export default function Hero() {
-  const { loaded } = useLoading();
-  const sectionRef = useRef<HTMLElement>(null);
-  const isFinePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
+  const { loaded }       = useLoading();
+  const sectionRef       = useRef<HTMLElement>(null);
+  const isFinePointer    = useMediaQuery("(hover: hover) and (pointer: fine)");
 
-  // ── Parallax ──────────────────────────────────────────────────────────────
+  // ── Parallax spring values ─────────────────────────────────────────────────
   const rawX = useMotionValue(0);
   const rawY = useMotionValue(0);
-  const mx = useSpring(rawX, { damping: 28, stiffness: 100, mass: 0.9 });
-  const my = useSpring(rawY, { damping: 28, stiffness: 100, mass: 0.9 });
+  const mx   = useSpring(rawX, { damping: 28, stiffness: 100, mass: 0.9 });
+  const my   = useSpring(rawY, { damping: 28, stiffness: 100, mass: 0.9 });
 
   const circlesX = useTransform(mx, v => v * 18);
   const circlesY = useTransform(my, v => v * 18);
@@ -66,59 +52,29 @@ export default function Hero() {
   const px = (x: typeof logoX, y: typeof logoY) =>
     isFinePointer ? { x, y } : {};
 
-  // ── Refs for direct DOM updates (zero re-renders) ─────────────────────────
-  const sportsTopRef  = useRef<HTMLSpanElement>(null);
-  const designTopRef  = useRef<HTMLSpanElement>(null);
-  const japanTopRef   = useRef<HTMLSpanElement>(null);
-  const logoRevealRef = useRef<HTMLDivElement>(null);
-  // Thin accent ring that sits at the edge of the reveal — gives a polished boundary
-  const logoRingRef   = useRef<HTMLDivElement>(null);
+  // ── Refs for text colour-reveal (direct DOM, no re-renders) ───────────────
+  const sportsTopRef = useRef<HTMLSpanElement>(null);
+  const designTopRef = useRef<HTMLSpanElement>(null);
+  const japanTopRef  = useRef<HTMLSpanElement>(null);
 
   const applyTextMask = (
     ref: React.RefObject<HTMLSpanElement | null>,
-    clientX: number,
-    clientY: number,
+    cx: number, cy: number,
   ) => {
     const el = ref.current;
     if (!el) return;
-    const r = el.getBoundingClientRect();
-    const mask = textRevealMask(clientX - r.left, clientY - r.top);
+    const r    = el.getBoundingClientRect();
+    const mask = textRevealMask(cx - r.left, cy - r.top);
     el.style.webkitMaskImage = mask;
-    el.style.maskImage = mask;
+    el.style.maskImage       = mask;
   };
 
-  const applyLogoReveal = (clientX: number, clientY: number) => {
-    const el = logoRevealRef.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const mask = logoRevealMask(clientX - r.left, clientY - r.top);
-    el.style.webkitMaskImage = mask;
-    el.style.maskImage = mask;
-  };
-
-  const applyRing = (clientX: number, clientY: number) => {
-    const el = logoRingRef.current;
-    const sect = sectionRef.current;
-    if (!el || !sect) return;
-    const r = sect.getBoundingClientRect();
-    // Ring is 350×350; centre it at cursor (subtract half = 175)
-    el.style.transform = `translate(${clientX - r.left - 175}px, ${clientY - r.top - 175}px)`;
-    el.style.opacity = '1';
-  };
-
-  const resetMasks = () => {
+  const resetTextMasks = () => {
     [sportsTopRef, designTopRef, japanTopRef].forEach(ref => {
       if (!ref.current) return;
       ref.current.style.webkitMaskImage = TEXT_MASK_OFF;
-      ref.current.style.maskImage = TEXT_MASK_OFF;
+      ref.current.style.maskImage       = TEXT_MASK_OFF;
     });
-    if (logoRevealRef.current) {
-      logoRevealRef.current.style.webkitMaskImage = LOGO_MASK_OFF;
-      logoRevealRef.current.style.maskImage = LOGO_MASK_OFF;
-    }
-    if (logoRingRef.current) {
-      logoRingRef.current.style.opacity = '0';
-    }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
@@ -130,60 +86,49 @@ export default function Hero() {
     applyTextMask(sportsTopRef, e.clientX, e.clientY);
     applyTextMask(designTopRef, e.clientX, e.clientY);
     applyTextMask(japanTopRef,  e.clientX, e.clientY);
-    applyLogoReveal(e.clientX, e.clientY);
-    applyRing(e.clientX, e.clientY);
   };
 
   const handleMouseLeave = () => {
     rawX.set(0); rawY.set(0);
-    resetMasks();
+    resetTextMasks();
   };
 
   return (
+    /*
+      overflow-hidden removed: the decorative drip SVG at the bottom
+      uses overflow:visible to let drip tips peek into the next section.
+    */
     <section
       ref={sectionRef}
       id="top"
-      className="relative flex min-h-svh flex-col overflow-hidden border-b border-line bg-ink"
+      className="relative flex min-h-svh flex-col border-b border-line bg-ink"
       onMouseMove={isFinePointer ? handleMouseMove : undefined}
       onMouseLeave={isFinePointer ? handleMouseLeave : undefined}
     >
-      {/* ── Ghost logo — always faintly visible at 6%, hinting the mark is there ── */}
-      <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ width: 600, height: 600 }}>
-        <Image src="/brand/icon-512.png" fill alt="" aria-hidden className="object-contain opacity-[0.06]" />
-      </div>
-
-      {/* ── Reveal logo — full opacity, unmasked by cursor ── */}
+      {/* ── Ghost logo — 6% opacity, always faintly present ── */}
       <div
-        ref={logoRevealRef}
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-        style={{ width: 600, height: 600, WebkitMaskImage: LOGO_MASK_OFF, maskImage: LOGO_MASK_OFF }}
+        className="pointer-events-none absolute left-1/2 top-1/2 z-[1] -translate-x-1/2 -translate-y-1/2"
+        style={{ width: 600, height: 600 }}
       >
-        <Image src="/brand/icon-512.png" fill alt="" className="object-contain" />
+        <Image
+          src="/brand/icon-512.png" fill alt=""
+          className="object-contain opacity-[0.06]"
+        />
       </div>
 
       {/*
-        ── Ring accent — thin circle at the edge of the reveal.
-        Sits in the section coordinate space; translated to cursor via DOM.
-        Starts hidden (opacity-0), shown on first mousemove.
-        350×350 matches the reveal radius (175px).
+        ── WaxReveal canvas (z-[6]) ──
+        Draws the logo inside Bézier wax-drip shapes at the cursor trail.
+        Pool at cursor + teardrop tail hanging down, growing over time.
+        Uses destination-in composite so logo appears only inside wax shapes.
       */}
-      <div
-        ref={logoRingRef}
-        aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-0 rounded-full opacity-0"
-        style={{
-          width: 350, height: 350,
-          border: '1px solid rgba(0, 70, 255, 0.18)',
-          boxShadow: '0 0 0 1px rgba(0,70,255,0.05), inset 0 0 40px rgba(0,70,255,0.04)',
-          transition: 'opacity 0.3s ease',
-        }}
-      />
+      <WaxReveal />
 
-      {/* ── Concentric rings ── */}
+      {/* ── Concentric breathing rings ── */}
       <motion.div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0"
+        className="pointer-events-none absolute inset-0 z-[7]"
         style={px(circlesX, circlesY)}
       >
         <svg className="h-full w-full" preserveAspectRatio="xMidYMid slice">
@@ -199,8 +144,30 @@ export default function Hero() {
         </svg>
       </motion.div>
 
+      {/*
+        ── Permanent drip decoration ──
+        Teardrop SVG paths at the hero's bottom edge.
+        overflow: visible lets the tips bleed past the section border-b
+        into the section below — the visual anchor for "dripping to page 2".
+      */}
+      <svg
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-0 left-0 z-[8] w-full overflow-visible"
+        style={{ height: 0 }}
+        viewBox="0 0 1440 0"
+        preserveAspectRatio="none"
+      >
+        {/* Each path: hangs below y=0 (the section bottom) into the next section */}
+        <path d="M 180 0 C 180 40 175 90 178 150 C 181 90 186 40 186 0 Z"  fill="rgba(0,70,255,0.10)" />
+        <path d="M 370 0 C 370 55 364 120 368 200 C 372 120 377 55 377 0 Z" fill="rgba(0,70,255,0.07)" />
+        <path d="M 620 0 C 620 35 615 75  618 120 C 621 75  625 35  625 0 Z" fill="rgba(0,70,255,0.09)" />
+        <path d="M 820 0 C 820 60 814 130 817 210 C 820 130 825 60  825 0 Z" fill="rgba(0,70,255,0.06)" />
+        <path d="M 1050 0 C 1050 45 1045 95 1048 155 C 1051 95 1055 45 1055 0 Z" fill="rgba(0,70,255,0.08)" />
+        <path d="M 1260 0 C 1260 38 1255 80 1258 130 C 1261 80 1265 38 1265 0 Z" fill="rgba(0,70,255,0.07)" />
+      </svg>
+
       {/* ── Top bar ── */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between px-6 pt-8 sm:px-10">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between px-6 pt-8 sm:px-10">
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={loaded ? { opacity: 1, y: 0 } : {}}
@@ -218,10 +185,10 @@ export default function Hero() {
         </motion.p>
       </div>
 
-      {/* ── Main layout ── */}
-      <div className="flex flex-1 flex-col items-center justify-between px-4 pt-24 pb-6 sm:px-8 sm:pt-28">
+      {/* ── Main layout — z-10 sits above rings/canvas ── */}
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-between px-4 pt-24 pb-6 sm:px-8 sm:pt-28">
 
-        {/* Logo mark — 3D parallax */}
+        {/* Logo mark — 3D parallax tilt */}
         <motion.div
           className="mt-4 sm:mt-6"
           style={isFinePointer ? { x: logoX, y: logoY, rotateX, rotateY, perspective: 700 } : {}}
@@ -236,11 +203,11 @@ export default function Hero() {
           />
         </motion.div>
 
-        {/* ── Type block ── */}
-        <div className="relative w-full text-center">
+        {/* Type block */}
+        <div className="w-full text-center">
           <h1 className="font-display uppercase tracking-[-0.04em] leading-[0.82]">
 
-            {/* SPORTS — whisper, reveals accent blue */}
+            {/* SPORTS — whisper; cursor reveals accent blue */}
             <motion.div
               className="relative block"
               style={px(sportsX, sportsY)}
@@ -257,7 +224,7 @@ export default function Hero() {
               </span>
             </motion.div>
 
-            {/* DESIGN — dominant, reveals accent blue */}
+            {/* DESIGN — dominant; cursor reveals accent blue */}
             <motion.div
               className="relative block"
               style={px(designX, designY)}
@@ -274,7 +241,7 @@ export default function Hero() {
               </span>
             </motion.div>
 
-            {/* JAPAN — accent blue, dissolves to cream at cursor */}
+            {/* JAPAN — accent blue; cursor dissolves to cream */}
             <motion.div
               className="relative block"
               style={px(japanX, japanY)}
@@ -294,7 +261,7 @@ export default function Hero() {
           </h1>
 
           <motion.p
-            className="relative mt-5 font-mono text-[9px] uppercase tracking-[0.35em] text-muted sm:text-[11px]"
+            className="mt-5 font-mono text-[9px] uppercase tracking-[0.35em] text-muted sm:text-[11px]"
             initial={{ opacity: 0 }}
             animate={loaded ? { opacity: 1 } : {}}
             transition={{ duration: 0.9, ease: EASE_OUT, delay: 0.52 }}
