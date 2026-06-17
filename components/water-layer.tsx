@@ -3,10 +3,93 @@
 import { useEffect, useRef } from "react";
 import { useMediaQuery } from "@/lib/use-media-query";
 
-// Simulation cell size in CSS pixels — smaller = smoother, heavier CPU
-const SCALE = 5;
-// Wave energy retention per physics step (1 = no decay, 0.98 = damps quickly)
-const DAMP  = 0.988;
+// How many cursor history points the shader processes per pixel
+const N = 60;
+// How long (ms) each point stays in the trail
+const LIFE = 2200;
+// Min pixels cursor must travel before we record a new point (controls density)
+const MIN_DIST = 6;
+
+// ── Vertex shader ─────────────────────────────────────────────────────────────
+// Draws a full-screen quad; all the work is in the fragment shader.
+const VERT = `
+attribute vec2 aPos;
+void main() {
+  gl_Position = vec4(aPos, 0.0, 1.0);
+}
+`;
+
+// ── Fragment shader ───────────────────────────────────────────────────────────
+// Metaball field: for each pixel, sums the influence of every cursor point.
+// Where the combined field > threshold, renders a fluid blob with specular lighting.
+const FRAG = `
+precision highp float;
+
+uniform vec2  uResolution;
+uniform vec2  uPoints[${N}];
+uniform float uStrengths[${N}];
+uniform int   uCount;
+
+void main() {
+  vec2 px = gl_FragCoord.xy;
+
+  float field = 0.0;
+  float gx = 0.0;
+  float gy = 0.0;
+
+  // Accumulate influence from each trail point.
+  // GLSL ES 1.0 doesn't allow break with a non-constant bound,
+  // so we branch instead.
+  for (int i = 0; i < ${N}; i++) {
+    if (i < uCount) {
+      float s  = uStrengths[i];
+      // Flip Y: canvas y=0 is top, WebGL y=0 is bottom
+      vec2  p  = vec2(uPoints[i].x, uResolution.y - uPoints[i].y);
+      float dx = px.x - p.x;
+      float dy = px.y - p.y;
+      float d2 = dx * dx + dy * dy + 1.0;
+      // Blob radius scales with viewport width so it looks right on all screens
+      float r  = uResolution.x * 0.07 * s;
+      float c  = s * r * r / d2;
+      field   += c;
+      // Gradient of the field (approximates the surface normal)
+      gx      -= 2.0 * dx * c / d2;
+      gy      -= 2.0 * dy * c / d2;
+    }
+  }
+
+  // Pixels below the threshold are fully transparent — hero shows through.
+  if (field < 0.5) {
+    gl_FragColor = vec4(0.0);
+    return;
+  }
+
+  // Smooth blob edge
+  float alpha = smoothstep(0.5, 0.90, field) * 0.92;
+
+  // Convert gradient to an approximate surface normal, then dot with a
+  // fixed light direction to get a specular highlight — makes the blob look
+  // like a rounded 3-D liquid surface, not a flat sticker.
+  float gMag    = sqrt(gx * gx + gy * gy) + 0.001;
+  float nx      = gx / gMag;
+  float ny      = gy / gMag;
+  // Light coming from upper-left
+  float spec    = nx * 0.55 + ny * (-0.83);
+  spec          = max(0.0, spec);
+  spec          = spec * spec * spec;
+
+  // Base colour: cool silver-blue (like liquid glass over cream)
+  // Highlight: near-white specular peak
+  vec3 base  = vec3(0.60, 0.67, 0.80);
+  vec3 hi    = vec3(0.97, 0.98, 1.00);
+  vec3 color = mix(base, hi, spec * 0.90 + 0.08);
+
+  gl_FragColor = vec4(color, alpha);
+}
+`;
+
+// ── Component ─────────────────────────────────────────────────────────────────
+type Pt = { x: number; y: number; born: number };
 
 export default function WaterLayer() {
   const canvasRef     = useRef<HTMLCanvasElement>(null);
@@ -16,122 +99,128 @@ export default function WaterLayer() {
     if (!isFinePointer) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
 
-    let W = 0, H = 0, cols = 0, rows = 0;
-    let curr = new Float32Array(0);
-    let prev = new Float32Array(0);
-    let img: ImageData | null = null;
-    let raf = 0;
+    // Request a transparent WebGL context so the hero behind shows through
+    const gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: false }) as WebGLRenderingContext | null;
+    if (!gl) return;
 
-    const init = () => {
-      W    = canvas.offsetWidth;
-      H    = canvas.offsetHeight;
-      canvas.width  = W;
-      canvas.height = H;
-      // +2 = 1-cell border on each side (absorbing boundary)
-      cols = Math.floor(W / SCALE) + 2;
-      rows = Math.floor(H / SCALE) + 2;
-      curr = new Float32Array(cols * rows);
-      prev = new Float32Array(cols * rows);
-      img  = null; // recreated in draw()
+    // ── Shader compilation helpers ─────────────────────────────────────────
+    const compileShader = (type: number, src: string) => {
+      const s = gl.createShader(type)!;
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+        console.error("Shader error:", gl.getShaderInfoLog(s));
+        return null;
+      }
+      return s;
     };
-    init();
-    const ro = new ResizeObserver(init);
+
+    const vert = compileShader(gl.VERTEX_SHADER, VERT);
+    const frag = compileShader(gl.FRAGMENT_SHADER, FRAG);
+    if (!vert || !frag) return;
+
+    const prog = gl.createProgram()!;
+    gl.attachShader(prog, vert);
+    gl.attachShader(prog, frag);
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+      console.error("Program link error:", gl.getProgramInfoLog(prog));
+      return;
+    }
+    gl.useProgram(prog);
+
+    // ── Full-screen quad geometry ──────────────────────────────────────────
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
+      gl.STATIC_DRAW,
+    );
+    const aPos = gl.getAttribLocation(prog, "aPos");
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+    // ── Uniform locations ──────────────────────────────────────────────────
+    const uRes    = gl.getUniformLocation(prog, "uResolution");
+    const uPts    = gl.getUniformLocation(prog, "uPoints[0]");
+    const uStr    = gl.getUniformLocation(prog, "uStrengths[0]");
+    const uCount  = gl.getUniformLocation(prog, "uCount");
+
+    // ── Alpha blending — needed for transparent canvas ─────────────────────
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.clearColor(0, 0, 0, 0);
+
+    // ── Viewport / resize ──────────────────────────────────────────────────
+    let W = 0, H = 0;
+    const resize = () => {
+      const dpr = window.devicePixelRatio || 1;
+      W = canvas.offsetWidth;
+      H = canvas.offsetHeight;
+      canvas.width  = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
     ro.observe(canvas);
 
-    // Push a "water drop" disturbance into the grid at CSS coordinates
-    const disturb = (cssX: number, cssY: number) => {
-      const cx = Math.floor(cssX / SCALE) + 1;
-      const cy = Math.floor(cssY / SCALE) + 1;
-      const r  = 5; // radius in cells
-      for (let dy = -r; dy <= r; dy++) {
-        for (let dx = -r; dx <= r; dx++) {
-          const d  = Math.sqrt(dx * dx + dy * dy);
-          if (d > r) continue;
-          const nx = cx + dx, ny = cy + dy;
-          if (nx > 0 && nx < cols - 1 && ny > 0 && ny < rows - 1) {
-            curr[ny * cols + nx] = 350 * (1 - d / r);
-          }
-        }
-      }
-    };
+    // ── Cursor trail ───────────────────────────────────────────────────────
+    const pts: Pt[] = [];
+    let lastX = -9999, lastY = -9999;
 
     const onMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
-      disturb(e.clientX - rect.left, e.clientY - rect.top);
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      // Throttle by distance so we don't flood the trail on slow moves
+      const dx = x - lastX, dy = y - lastY;
+      if (dx * dx + dy * dy < MIN_DIST * MIN_DIST) return;
+      lastX = x; lastY = y;
+      pts.push({ x, y, born: performance.now() });
+      if (pts.length > N) pts.shift();
     };
     canvas.addEventListener("mousemove", onMove);
 
+    // ── Flat arrays passed to WebGL uniforms each frame ────────────────────
+    const pxFlat = new Float32Array(N * 2);
+    const sFlat  = new Float32Array(N);
+
+    // ── Render loop ────────────────────────────────────────────────────────
+    let raf = 0;
     const draw = () => {
-      // ── Pond ripple physics ──────────────────────────
-      // Each cell = average of 4 neighbours in previous frame, minus own previous
-      // value. Multiplied by damping to bleed energy. Creates circular wave rings.
-      for (let y = 1; y < rows - 1; y++) {
-        for (let x = 1; x < cols - 1; x++) {
-          const i = y * cols + x;
-          curr[i] = (
-            prev[i - 1] + prev[i + 1] +
-            prev[i - cols] + prev[i + cols]
-          ) / 2 - curr[i];
-          curr[i] *= DAMP;
-        }
-      }
-      // Swap buffers
-      const tmp = prev; prev = curr; curr = tmp;
+      const now = performance.now();
 
-      // ── Pixel rendering via ImageData (avoids per-rect fillStyle overhead) ──
-      if (!img || img.width !== W || img.height !== H) {
-        img = ctx.createImageData(W, H);
-      }
-      const data = img.data;
+      // Expire old points
+      let start = 0;
+      while (start < pts.length && now - pts[start].born > LIFE) start++;
+      if (start > 0) pts.splice(0, start);
 
-      for (let gy = 0; gy < rows - 2; gy++) {
-        for (let gx = 0; gx < cols - 2; gx++) {
-          const ci = (gy + 1) * cols + (gx + 1);
-          const h  = curr[ci];
-
-          // Surface slope between neighbours → specular highlight intensity
-          const dX   = curr[ci + 1]    - curr[ci - 1];
-          const dY   = curr[ci + cols] - curr[ci - cols];
-          const spec = Math.min(1, Math.sqrt(dX * dX + dY * dY) / 340);
-
-          // Height normalised to [-1, 1] — crest vs trough
-          const hn    = Math.max(-1, Math.min(1, h / 280));
-
-          // Combined brightness: height pushes it bright/dark, slope adds white sheen
-          const blend = hn * 0.5 + spec * 0.9;
-
-          // Color mapping:
-          //   blend ≈ -0.5  → trough: dark blue, almost transparent (hero shows through)
-          //   blend ≈  0    → flat:   clear pool blue, 28% opacity
-          //   blend ≈ +0.5  → crest:  light blue, ~60% opacity
-          //   blend ≈ +1.4  → steep slope: pure white specular, ~100% opaque
-          const R = Math.round(Math.max(0, Math.min(255, 110 + blend * 145)));
-          const G = Math.round(Math.max(0, Math.min(255, 185 + blend * 70)));
-          const B = 255;
-          const A = Math.round(Math.max(0, Math.min(255, (0.26 + blend * 0.65) * 255)));
-
-          // Write this cell's colour to every pixel in the SCALE × SCALE block
-          const px0 = gx * SCALE, py0 = gy * SCALE;
-          for (let py = 0; py < SCALE && py0 + py < H; py++) {
-            for (let px = 0; px < SCALE && px0 + px < W; px++) {
-              const idx = ((py0 + py) * W + (px0 + px)) * 4;
-              data[idx]     = R;
-              data[idx + 1] = G;
-              data[idx + 2] = B;
-              data[idx + 3] = A;
-            }
-          }
-        }
+      const count = pts.length;
+      for (let i = 0; i < count; i++) {
+        const p   = pts[i];
+        const age = (now - p.born) / LIFE;
+        // Easing: slow fade-in, linear hold, accelerated fade-out
+        const s   = age < 0.1
+          ? age / 0.1                    // 0 → 1 fast ramp
+          : 1 - Math.pow((age - 0.1) / 0.9, 1.6); // ease out
+        pxFlat[i * 2]     = p.x;
+        pxFlat[i * 2 + 1] = p.y;
+        sFlat[i]           = Math.max(0, s);
       }
 
-      ctx.putImageData(img, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.uniform2f(uRes, W, H);
+      gl.uniform2fv(uPts, pxFlat);
+      gl.uniform1fv(uStr, sFlat);
+      gl.uniform1i(uCount, count);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
       raf = requestAnimationFrame(draw);
     };
-
-    raf = requestAnimationFrame(draw);
+    draw();
 
     return () => {
       cancelAnimationFrame(raf);
@@ -144,7 +233,7 @@ export default function WaterLayer() {
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className={`absolute inset-0 z-20 h-full w-full cursor-crosshair ${
+      className={`absolute inset-0 z-20 h-full w-full cursor-none ${
         isFinePointer ? "" : "pointer-events-none opacity-0"
       }`}
     />
