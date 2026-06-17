@@ -9,17 +9,20 @@ import ScrollIndicator from "./scroll-indicator";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { EASE_OUT } from "@/lib/motion";
 
-// Cursor-reveal radius in CSS px
-const REVEAL_R = 120;
-// Off-screen default so the mask hides nothing at rest
-const MASK_OFF = `radial-gradient(circle 0px at -9999px -9999px, transparent 0%, black 0%)`;
+// Reveal radius for both text colour and logo
+const REVEAL_R = 130;
+
+// Text top-layer mask: fully black → top layer visible (original colour showing)
+const TEXT_MASK_OFF = `radial-gradient(circle 0px at -9999px -9999px, transparent 0%, black 0%)`;
+// Logo mask: fully transparent → logo hidden
+const LOGO_MASK_OFF = `linear-gradient(transparent, transparent)`;
 
 export default function Hero() {
   const { loaded } = useLoading();
   const sectionRef = useRef<HTMLElement>(null);
   const isFinePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
 
-  // ── Parallax spring setup ──────────────────────────────────────────────────
+  // ── Parallax ──────────────────────────────────────────────────────────────
   const rawX = useMotionValue(0);
   const rawY = useMotionValue(0);
   const mx = useSpring(rawX, { damping: 28, stiffness: 100, mass: 0.9 });
@@ -41,24 +44,32 @@ export default function Hero() {
   const px = (x: typeof logoX, y: typeof logoY) =>
     isFinePointer ? { x, y } : {};
 
-  // ── Refs to the top (mask) layer of each word ─────────────────────────────
-  // We update these directly in the mouse handler — zero React re-renders.
-  const sportsTopRef = useRef<HTMLSpanElement>(null);
-  const designTopRef = useRef<HTMLSpanElement>(null);
-  const japanTopRef  = useRef<HTMLSpanElement>(null);
+  // ── Refs for direct DOM mask updates (no re-renders) ──────────────────────
+  const sportsTopRef  = useRef<HTMLSpanElement>(null);
+  const designTopRef  = useRef<HTMLSpanElement>(null);
+  const japanTopRef   = useRef<HTMLSpanElement>(null);
+  const logoRevealRef = useRef<HTMLDivElement>(null);
 
-  const applyMask = (
-    ref: React.RefObject<HTMLSpanElement | null>,
+  const setMask = (
+    ref: React.RefObject<HTMLElement | null>,
     clientX: number,
     clientY: number,
+    mode: "reveal-logo" | "hide-text",
   ) => {
     const el = ref.current;
     if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-    // Soft edge: transparent centre → solid black at 65% of radius
-    const mask = `radial-gradient(circle ${REVEAL_R}px at ${x}px ${y}px, transparent 0%, black 65%)`;
+    const r = el.getBoundingClientRect();
+    const x = clientX - r.left;
+    const y = clientY - r.top;
+
+    let mask: string;
+    if (mode === "reveal-logo") {
+      // Black centre → transparent edge: logo visible at cursor
+      mask = `radial-gradient(circle ${REVEAL_R}px at ${x}px ${y}px, black 0%, transparent 60%)`;
+    } else {
+      // Transparent centre → black edge: top-layer text hidden at cursor, reveal colour shows
+      mask = `radial-gradient(circle ${REVEAL_R}px at ${x}px ${y}px, transparent 0%, black 60%)`;
+    }
     el.style.webkitMaskImage = mask;
     el.style.maskImage = mask;
   };
@@ -66,28 +77,33 @@ export default function Hero() {
   const resetMasks = () => {
     [sportsTopRef, designTopRef, japanTopRef].forEach(ref => {
       if (ref.current) {
-        ref.current.style.webkitMaskImage = MASK_OFF;
-        ref.current.style.maskImage = MASK_OFF;
+        ref.current.style.webkitMaskImage = TEXT_MASK_OFF;
+        ref.current.style.maskImage = TEXT_MASK_OFF;
       }
     });
+    if (logoRevealRef.current) {
+      logoRevealRef.current.style.webkitMaskImage = LOGO_MASK_OFF;
+      logoRevealRef.current.style.maskImage = LOGO_MASK_OFF;
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
     // Parallax
     const rect = sectionRef.current?.getBoundingClientRect();
     if (rect) {
-      rawX.set((e.clientX - rect.left  - rect.width  / 2) / rect.width);
-      rawY.set((e.clientY - rect.top   - rect.height / 2) / rect.height);
+      rawX.set((e.clientX - rect.left - rect.width  / 2) / rect.width);
+      rawY.set((e.clientY - rect.top  - rect.height / 2) / rect.height);
     }
     // Text colour reveal
-    applyMask(sportsTopRef, e.clientX, e.clientY);
-    applyMask(designTopRef, e.clientX, e.clientY);
-    applyMask(japanTopRef,  e.clientX, e.clientY);
+    setMask(sportsTopRef,  e.clientX, e.clientY, "hide-text");
+    setMask(designTopRef,  e.clientX, e.clientY, "hide-text");
+    setMask(japanTopRef,   e.clientX, e.clientY, "hide-text");
+    // Logo reveal
+    setMask(logoRevealRef, e.clientX, e.clientY, "reveal-logo");
   };
 
   const handleMouseLeave = () => {
-    rawX.set(0);
-    rawY.set(0);
+    rawX.set(0); rawY.set(0);
     resetMasks();
   };
 
@@ -140,7 +156,7 @@ export default function Hero() {
       {/* ── Main layout ── */}
       <div className="flex flex-1 flex-col items-center justify-between px-4 pt-24 pb-6 sm:px-8 sm:pt-28">
 
-        {/* Logo */}
+        {/* Top logo mark — 3D parallax */}
         <motion.div
           className="mt-4 sm:mt-6"
           style={isFinePointer ? { x: logoX, y: logoY, rotateX, rotateY, perspective: 700 } : {}}
@@ -155,11 +171,32 @@ export default function Hero() {
           />
         </motion.div>
 
-        {/* Type stack */}
-        <div className="w-full text-center">
+        {/* ── Type block — logo hidden behind, revealed at cursor ── */}
+        <div className="relative w-full text-center">
+
+          {/*
+            Logo layer — sits behind all text, fully hidden by a transparent mask.
+            On cursor move, mask opens a circle to reveal the logo locally.
+            fill + object-contain = sized to match the text container.
+          */}
+          <div
+            ref={logoRevealRef}
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+            style={{ WebkitMaskImage: LOGO_MASK_OFF, maskImage: LOGO_MASK_OFF }}
+          >
+            <Image
+              src="/brand/icon-512.png"
+              fill
+              alt=""
+              className="object-contain"
+            />
+          </div>
+
+          {/* Type — rendered above the logo in DOM order */}
           <h1 className="font-display uppercase tracking-[-0.04em] leading-[0.82]">
 
-            {/* ── SPORTS ── whisper → reveals accent blue ── */}
+            {/* SPORTS — whisper, reveals accent blue */}
             <motion.div
               className="relative block"
               style={px(sportsX, sportsY)}
@@ -167,21 +204,16 @@ export default function Hero() {
               animate={loaded ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 1, ease: EASE_OUT, delay: 0.18 }}
             >
-              {/* Reveal layer: accent blue */}
               <span aria-hidden className="pointer-events-none absolute inset-0 block text-[clamp(1.1rem,3.8vw,4rem)] font-light text-accent">
                 Sports
               </span>
-              {/* Original layer: pale, masked at cursor */}
-              <span
-                ref={sportsTopRef}
-                className="relative block text-[clamp(1.1rem,3.8vw,4rem)] font-light text-paper/20"
-                style={{ WebkitMaskImage: MASK_OFF, maskImage: MASK_OFF }}
-              >
+              <span ref={sportsTopRef} className="relative block text-[clamp(1.1rem,3.8vw,4rem)] font-light text-paper/20"
+                style={{ WebkitMaskImage: TEXT_MASK_OFF, maskImage: TEXT_MASK_OFF }}>
                 Sports
               </span>
             </motion.div>
 
-            {/* ── DESIGN ── dominant → reveals accent blue ── */}
+            {/* DESIGN — dominant, reveals accent blue */}
             <motion.div
               className="relative block"
               style={px(designX, designY)}
@@ -189,21 +221,16 @@ export default function Hero() {
               animate={loaded ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 1.1, ease: EASE_OUT, delay: 0.26 }}
             >
-              {/* Reveal layer: accent blue */}
               <span aria-hidden className="pointer-events-none absolute inset-0 block text-[clamp(4.5rem,22vw,22rem)] font-extrabold text-accent">
                 Design
               </span>
-              {/* Original layer: black, masked at cursor */}
-              <span
-                ref={designTopRef}
-                className="relative block text-[clamp(4.5rem,22vw,22rem)] font-extrabold text-paper"
-                style={{ WebkitMaskImage: MASK_OFF, maskImage: MASK_OFF }}
-              >
+              <span ref={designTopRef} className="relative block text-[clamp(4.5rem,22vw,22rem)] font-extrabold text-paper"
+                style={{ WebkitMaskImage: TEXT_MASK_OFF, maskImage: TEXT_MASK_OFF }}>
                 Design
               </span>
             </motion.div>
 
-            {/* ── JAPAN ── accent blue → reveals cream (dissolves into bg) ── */}
+            {/* JAPAN — accent blue, dissolves to cream at cursor */}
             <motion.div
               className="relative block"
               style={px(japanX, japanY)}
@@ -211,16 +238,11 @@ export default function Hero() {
               animate={loaded ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 1, ease: EASE_OUT, delay: 0.34 }}
             >
-              {/* Reveal layer: cream — letter appears to melt into background */}
               <span aria-hidden className="pointer-events-none absolute inset-0 block text-[clamp(2.5rem,9.5vw,9.5rem)] font-extrabold text-ink">
                 Japan
               </span>
-              {/* Original layer: blue, masked at cursor */}
-              <span
-                ref={japanTopRef}
-                className="relative block text-[clamp(2.5rem,9.5vw,9.5rem)] font-extrabold text-accent"
-                style={{ WebkitMaskImage: MASK_OFF, maskImage: MASK_OFF }}
-              >
+              <span ref={japanTopRef} className="relative block text-[clamp(2.5rem,9.5vw,9.5rem)] font-extrabold text-accent"
+                style={{ WebkitMaskImage: TEXT_MASK_OFF, maskImage: TEXT_MASK_OFF }}>
                 Japan
               </span>
             </motion.div>
@@ -228,7 +250,7 @@ export default function Hero() {
           </h1>
 
           <motion.p
-            className="mt-5 font-mono text-[9px] uppercase tracking-[0.35em] text-muted sm:text-[11px]"
+            className="relative mt-5 font-mono text-[9px] uppercase tracking-[0.35em] text-muted sm:text-[11px]"
             initial={{ opacity: 0 }}
             animate={loaded ? { opacity: 1 } : {}}
             transition={{ duration: 0.9, ease: EASE_OUT, delay: 0.52 }}
