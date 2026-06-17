@@ -9,8 +9,11 @@ export default function SmoothScroll({
   children: React.ReactNode;
 }) {
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  // Touch devices use hardware-accelerated native scroll — Lenis on mobile
+  // intercepts touch events on the JS thread, causing lag and dropped taps.
+  const isTouch = useMediaQuery("(hover: none) and (pointer: coarse)");
 
-  if (reducedMotion) {
+  if (reducedMotion || isTouch) {
     return <>{children}</>;
   }
 

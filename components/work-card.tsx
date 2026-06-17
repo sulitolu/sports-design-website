@@ -23,14 +23,17 @@ export default function WorkCard({
   index: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const isTouch = useMediaQuery("(hover: none) and (pointer: coarse)");
+  const canHover = useMediaQuery("(hover: hover)");
+  const isInView = useInView(ref, { amount: 0.5 });
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start end", "end start"],
   });
-  const y = useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]);
-  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
-  const canHover = useMediaQuery("(hover: hover)");
-  const isInView = useInView(ref, { amount: 0.5 });
+  const yRaw = useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]);
+  // Disable parallax on touch — scroll listeners run on JS thread and cause lag.
+  const y = reducedMotion || isTouch ? "0%" : yRaw;
   const [isHovering, setIsHovering] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const shouldPlay = !reducedMotion && (canHover ? isHovering : isInView);
