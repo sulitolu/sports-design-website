@@ -68,27 +68,40 @@ void main() {
   float spec = max(0.0, nx * 0.50 + ny * (-0.87));
   spec       = spec * spec * spec;  // cubic for tight, glossy highlight
 
-  // ── Sample logo texture at this pixel ─────────────────────────────────────
-  vec2  logoC  = vec2(uLogoCx, uResolution.y - uLogoCy);
-  vec2  uv     = (px - logoC) / uLogoSize + 0.5;
-  vec4  logo   = vec4(0.0);
+  // ── Sample logo texture ────────────────────────────────────────────────────
+  vec2 logoC = vec2(uLogoCx, uResolution.y - uLogoCy);
+  vec2 uv    = (px - logoC) / uLogoSize + 0.5;
+  vec4 logo  = vec4(0.0);
+
   if (uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0) {
     logo = texture2D(uLogo, uv);
-    // Fade alpha to zero near UV edges so the texture boundary is never visible
-    // as a hard rectangle — logo's own circular alpha does the real clipping
+    // Fade to zero at UV rectangle boundary — logo's circular alpha does real clipping
     float ex = min(uv.x, 1.0 - uv.x);
     float ey = min(uv.y, 1.0 - uv.y);
     logo.a  *= smoothstep(0.0, 0.04, ex) * smoothstep(0.0, 0.04, ey);
   }
 
-  // ── Wax material: near-black with cool specular ────────────────────────────
-  //    Matches the site ink colour (#0d0d10 ≈ vec3(0.05,0.05,0.06))
+  // ── Thin white ring at logo circle edge ────────────────────────────────────
+  // Contract UV 1.5% toward centre: at pixels just outside the logo circle,
+  // the contracted UV lands inside it (alpha ≈ 1) while logo.a ≈ 0 here.
+  // That difference in alpha identifies the ring zone without needing a
+  // hard-coded circle radius.
+  vec2  ringUV = 0.5 + (uv - 0.5) * 0.985;
+  float innerA = 0.0;
+  if (ringUV.x >= 0.0 && ringUV.x <= 1.0 && ringUV.y >= 0.0 && ringUV.y <= 1.0) {
+    innerA = texture2D(uLogo, ringUV).a;
+  }
+  // ring > 0 where contracted sample is inside logo but current pixel is at/outside edge
+  float ring = smoothstep(0.30, 0.65, innerA) * (1.0 - smoothstep(0.20, 0.60, logo.a));
+
+  // ── Wax material ───────────────────────────────────────────────────────────
   vec3 waxBase = vec3(0.05, 0.05, 0.07);
-  vec3 waxSpec = vec3(0.42, 0.46, 0.58);  // cool blue-grey sheen
+  vec3 waxSpec = vec3(0.42, 0.46, 0.58);
   vec3 wax     = mix(waxBase, waxSpec, spec * 0.78 + 0.03);
 
-  // Blend logo into wax — logo mark visible at ~40% through wax
+  // Blend: wax base → logo mark → white ring on top
   vec3 finalRGB = mix(wax, logo.rgb, logo.a * 0.40);
+  finalRGB      = mix(finalRGB, vec3(1.0), ring * 0.78);
 
   gl_FragColor = vec4(finalRGB, alpha);
 }
