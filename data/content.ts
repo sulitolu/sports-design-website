@@ -195,28 +195,28 @@ export const athletes = {
     "Personal brand films and content built for players from NEC Green Rockets, Japan Rugby League One.",
   roster: [
     {
-      name: "Player 01",
-      position: "Position TBD",
+      name: "Riley Hohepa",
+      position: "Fullback / First Five",
       photo: "/images/athletes/athlete-01.jpg",
     },
     {
-      name: "Player 02",
-      position: "Position TBD",
+      name: "Orbyn Leedger",
+      position: "Second Five / Centre",
       photo: "/images/athletes/athlete-02.jpg",
     },
     {
-      name: "Player 03",
-      position: "Position TBD",
+      name: "Christian Lau'i",
+      position: "Second Five / Centre",
       photo: "/images/athletes/athlete-03.jpg",
     },
     {
-      name: "Player 04",
-      position: "Position TBD",
+      name: "Ryoi Kamei",
+      position: "Flanker / Number 8",
       photo: "/images/athletes/athlete-04.jpg",
     },
     {
-      name: "Player 05",
-      position: "Position TBD",
+      name: "Nick Phipps",
+      position: "Halfback",
       photo: "/images/athletes/athlete-05.jpg",
     },
   ] satisfies Athlete[],
