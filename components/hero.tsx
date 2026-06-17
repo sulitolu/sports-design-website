@@ -1,64 +1,91 @@
 "use client";
 
 import Image from "next/image";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import type { MotionValue } from "framer-motion";
-import { useRef } from "react";
+import { motion } from "framer-motion";
 import { useLoading } from "./loading-context";
 import { hero } from "@/data/content";
 import ScrollIndicator from "./scroll-indicator";
-import { useMediaQuery } from "@/lib/use-media-query";
 import { EASE_OUT } from "@/lib/motion";
 
-const REVEAL_RADIUS = 160;
-// Match --color-paper (#0d0d10) at 95% opacity so the logo barely bleeds
-// through the overlay — hinting that something is hidden beneath.
-const OVERLAY_COLOR = "rgba(13,13,16,0.95)";
+const LINE_SIZES = "text-[clamp(3rem,12vw,10rem)]";
 
 export default function Hero() {
   const { loaded } = useLoading();
-  const sectionRef = useRef<HTMLElement>(null);
-  const isFinePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
-
-  // Start off-screen so the overlay is fully opaque on mount
-  const mouseX = useMotionValue(-9999);
-  const mouseY = useMotionValue(-9999);
-  const springX = useSpring(mouseX, { damping: 22, stiffness: 200 });
-  const springY = useSpring(mouseY, { damping: 22, stiffness: 200 });
-
-  // Radial gradient with transparent hole at cursor — reveals logo beneath
-  const overlayBackground = useTransform(
-    [springX, springY] as MotionValue[],
-    ([x, y]: number[]) =>
-      `radial-gradient(circle ${REVEAL_RADIUS}px at ${x}px ${y}px, transparent 0%, transparent ${REVEAL_RADIUS - 1}px, ${OVERLAY_COLOR} ${REVEAL_RADIUS}px)`
-  );
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    const rect = sectionRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    mouseX.set(e.clientX - rect.left);
-    mouseY.set(e.clientY - rect.top);
-  };
-
-  const handleMouseLeave = () => {
-    mouseX.set(-9999);
-    mouseY.set(-9999);
-  };
 
   return (
     <section
-      ref={sectionRef}
       id="top"
       className="relative flex min-h-svh flex-col justify-end overflow-hidden border-b border-line bg-paper"
-      onMouseMove={isFinePointer ? handleMouseMove : undefined}
-      onMouseLeave={isFinePointer ? handleMouseLeave : undefined}
     >
-      {/* Logo — revealed by cursor on desktop, always visible on mobile */}
-      <div className="flex flex-1 flex-col items-center justify-center gap-10 px-6 pb-8 pt-24 sm:px-10">
+      {/* Concentric circles — subtle cinematic texture behind the logo */}
+      <svg
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 h-full w-full"
+        preserveAspectRatio="xMidYMid slice"
+      >
+        {[200, 320, 450, 600, 780, 980].map((r) => (
+          <circle
+            key={r}
+            cx="50%"
+            cy="55%"
+            r={r}
+            fill="none"
+            stroke="rgb(244 243 239 / 0.04)"
+            strokeWidth="1"
+          />
+        ))}
+      </svg>
+
+      {/* Top monogram — like LN's small logo above the name */}
+      <motion.div
+        className="absolute left-1/2 -translate-x-1/2 pt-8"
+        initial={{ opacity: 0, y: -8 }}
+        animate={loaded ? { opacity: 1, y: 0 } : {}}
+        transition={{ duration: 0.6, ease: EASE_OUT, delay: 0.05 }}
+      >
+        <Image
+          src="/brand/icon.png"
+          alt=""
+          aria-hidden
+          width={36}
+          height={36}
+          priority
+          className="h-7 w-7 brightness-0 invert opacity-60 sm:h-9 sm:w-9"
+        />
+      </motion.div>
+
+      {/* Main content */}
+      <div className="flex flex-1 flex-col items-center justify-start px-6 pt-28 pb-6 sm:px-10 sm:pt-36">
+
+        {/* Mixed-weight name — "SPORTS" light, "DESIGN" bold, "JAPAN" accent */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          className="text-center"
+          initial={{ opacity: 0, y: 24 }}
+          animate={loaded ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 1, ease: EASE_OUT, delay: 0.15 }}
+        >
+          <h1 className="font-display uppercase leading-[0.88] tracking-[-0.04em]">
+            <span className={`block font-light text-ink/50 ${LINE_SIZES}`}>
+              Sports
+            </span>
+            <span className={`block font-extrabold text-ink ${LINE_SIZES}`}>
+              Design
+            </span>
+            <span className={`block font-extrabold text-accent ${LINE_SIZES}`}>
+              Japan
+            </span>
+          </h1>
+          <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.35em] text-muted sm:text-xs">
+            映像制作 &nbsp;/&nbsp; アスリートブランディング
+          </p>
+        </motion.div>
+
+        {/* Large logo mark — the portrait equivalent */}
+        <motion.div
+          className="mt-10 sm:mt-14"
+          initial={{ opacity: 0, scale: 0.88 }}
           animate={loaded ? { opacity: 1, scale: 1 } : {}}
-          transition={{ duration: 1.2, ease: EASE_OUT, delay: 0.1 }}
+          transition={{ duration: 1.4, ease: EASE_OUT, delay: 0.3 }}
         >
           <Image
             src="/brand/icon-512.png"
@@ -66,41 +93,14 @@ export default function Hero() {
             width={512}
             height={512}
             priority
-            className="h-[clamp(180px,40vw,420px)] w-[clamp(180px,40vw,420px)] brightness-0 invert"
+            className="h-[clamp(150px,32vw,300px)] w-[clamp(150px,32vw,300px)] grayscale invert"
           />
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={loaded ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.9, ease: EASE_OUT, delay: 0.45 }}
-          className="flex flex-col items-center gap-3 text-center"
-        >
-          <Image
-            src="/brand/wordmark-dark.png"
-            alt="Sports Design Japan"
-            width={600}
-            height={60}
-            className="h-auto w-[clamp(200px,45vw,460px)] object-contain"
-          />
-          <span className="font-jp text-sm text-muted">
-            {hero.tagline.jp}
-          </span>
         </motion.div>
       </div>
 
-      {/* Overlay with cursor-shaped hole — desktop only */}
-      {isFinePointer && (
-        <motion.div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{ background: overlayBackground }}
-        />
-      )}
-
-      {/* Bottom bar — z-10 to stay above the overlay */}
+      {/* Bottom strip — cream bar with tagline + scroll */}
       <motion.div
-        className="relative z-10 flex flex-col gap-6 border-t border-line bg-ink px-6 py-6 sm:flex-row sm:items-end sm:justify-between sm:px-10"
+        className="flex flex-col gap-6 border-t border-line bg-ink px-6 py-6 sm:flex-row sm:items-end sm:justify-between sm:px-10"
         initial={{ opacity: 0, y: 12 }}
         animate={loaded ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.8, ease: EASE_OUT, delay: 0.65 }}
