@@ -225,7 +225,7 @@ export const athletes = {
 export const cta = {
   heading: { en: "LET'S CREATE", jp: "一緒に作りましょう" },
   body: "Have a project, a season, or a story worth telling? Let's talk.",
-  email: "hello@sportsdesignjapan.com",
+  email: "sportsdesignjp@gmail.com",
   instagram: {
     handle: "@sports_designjp",
     url: "https://instagram.com/sports_designjp",

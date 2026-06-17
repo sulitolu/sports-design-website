@@ -101,15 +101,14 @@ export default function Hero() {
     <section
       ref={sectionRef}
       id="top"
-      className="relative flex min-h-svh flex-col border-b border-line bg-ink"
+      className="relative flex min-h-svh flex-col border-b border-line bg-ink overflow-x-clip"
       onMouseMove={isFinePointer ? handleMouseMove : undefined}
       onMouseLeave={isFinePointer ? handleMouseLeave : undefined}
     >
       {/* ── Ghost logo — 6% opacity, always faintly present ── */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-1/2 z-[1] -translate-x-1/2 -translate-y-1/2"
-        style={{ width: 600, height: 600 }}
+        className="pointer-events-none absolute left-1/2 top-1/2 z-[1] -translate-x-1/2 -translate-y-1/2 w-[min(600px,88vw)] h-[min(600px,88vw)]"
       >
         <Image
           src="/brand/icon-512.png" fill alt=""

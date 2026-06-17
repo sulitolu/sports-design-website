@@ -25,7 +25,7 @@ export default function Athletes() {
         </p>
       </Reveal>
 
-      <RevealGroup className="mt-12 grid grid-cols-2 gap-4 sm:mt-16 sm:grid-cols-3 sm:gap-6 lg:grid-cols-5">
+      <RevealGroup className="mt-12 grid grid-cols-2 gap-4 sm:mt-16 sm:grid-cols-3 sm:gap-6 lg:grid-cols-5 [&>*:last-child:nth-child(odd)]:col-span-2 [&>*:last-child:nth-child(odd)]:mx-auto [&>*:last-child:nth-child(odd)]:w-1/2 sm:[&>*:last-child:nth-child(odd)]:col-span-1 sm:[&>*:last-child:nth-child(odd)]:w-full sm:[&>*:last-child:nth-child(odd)]:mx-0">
         {athletes.roster.map((athlete) => (
           <RevealItem key={athlete.name}>
             <div className="group relative aspect-[1000/1777] overflow-hidden rounded-sm bg-ink">
