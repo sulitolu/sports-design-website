@@ -69,12 +69,16 @@ void main() {
   spec       = spec * spec * spec;  // cubic for tight, glossy highlight
 
   // ── Sample logo texture at this pixel ─────────────────────────────────────
-  // Logo center in WebGL coords (y-flipped from CSS)
   vec2  logoC  = vec2(uLogoCx, uResolution.y - uLogoCy);
   vec2  uv     = (px - logoC) / uLogoSize + 0.5;
   vec4  logo   = vec4(0.0);
   if (uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0) {
     logo = texture2D(uLogo, uv);
+    // Fade alpha to zero near UV edges so the texture boundary is never visible
+    // as a hard rectangle — logo's own circular alpha does the real clipping
+    float ex = min(uv.x, 1.0 - uv.x);
+    float ey = min(uv.y, 1.0 - uv.y);
+    logo.a  *= smoothstep(0.0, 0.04, ex) * smoothstep(0.0, 0.04, ey);
   }
 
   // ── Wax material: near-black with cool specular ────────────────────────────
@@ -172,7 +176,7 @@ export default function WaxReveal() {
     // Use the 1024×1024 source so Retina screens never have to upsample
     const tex = gl.createTexture();
     const img = new window.Image();
-    img.src   = "/brand/logo.png";
+    img.src   = "/brand/icon-512.png"; // icon-only (no wordmark text)
     img.onload = () => {
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, tex);
