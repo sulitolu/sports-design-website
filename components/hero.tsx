@@ -9,13 +9,35 @@ import ScrollIndicator from "./scroll-indicator";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { EASE_OUT } from "@/lib/motion";
 
-// Reveal radius for both text colour and logo
-const REVEAL_R = 130;
-
-// Text top-layer mask: fully black → top layer visible (original colour showing)
+// Text mask — fully black = top layer fully visible (original colour)
 const TEXT_MASK_OFF = `radial-gradient(circle 0px at -9999px -9999px, transparent 0%, black 0%)`;
-// Logo mask: fully transparent → logo hidden
+// Logo reveal mask — fully transparent = logo hidden
 const LOGO_MASK_OFF = `linear-gradient(transparent, transparent)`;
+
+// Logo reveal: crisp 95px core then a 5-stop cubic-ease falloff to 0 at 175px.
+// Multiple stops approximate a smooth S-curve so the edge looks organic, not like
+// a CSS circle stamp.
+const logoRevealMask = (x: number, y: number) =>
+  `radial-gradient(circle at ${x}px ${y}px,
+    black        0px,
+    black        95px,
+    rgba(0,0,0,0.88) 115px,
+    rgba(0,0,0,0.60) 135px,
+    rgba(0,0,0,0.28) 153px,
+    rgba(0,0,0,0.07) 167px,
+    transparent  175px
+  )`;
+
+// Text mask: punch a hole at cursor so the reveal-colour layer shows through.
+const textRevealMask = (x: number, y: number) =>
+  `radial-gradient(circle at ${x}px ${y}px,
+    transparent  0px,
+    transparent  80px,
+    rgba(0,0,0,0.30) 100px,
+    rgba(0,0,0,0.72) 118px,
+    rgba(0,0,0,0.92) 130px,
+    black        145px
+  )`;
 
 export default function Hero() {
   const { loaded } = useLoading();
@@ -44,62 +66,72 @@ export default function Hero() {
   const px = (x: typeof logoX, y: typeof logoY) =>
     isFinePointer ? { x, y } : {};
 
-  // ── Refs for direct DOM mask updates (no re-renders) ──────────────────────
+  // ── Refs for direct DOM updates (zero re-renders) ─────────────────────────
   const sportsTopRef  = useRef<HTMLSpanElement>(null);
   const designTopRef  = useRef<HTMLSpanElement>(null);
   const japanTopRef   = useRef<HTMLSpanElement>(null);
   const logoRevealRef = useRef<HTMLDivElement>(null);
+  // Thin accent ring that sits at the edge of the reveal — gives a polished boundary
+  const logoRingRef   = useRef<HTMLDivElement>(null);
 
-  const setMask = (
-    ref: React.RefObject<HTMLElement | null>,
+  const applyTextMask = (
+    ref: React.RefObject<HTMLSpanElement | null>,
     clientX: number,
     clientY: number,
-    mode: "reveal-logo" | "hide-text",
   ) => {
     const el = ref.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    const x = clientX - r.left;
-    const y = clientY - r.top;
-
-    let mask: string;
-    if (mode === "reveal-logo") {
-      // Black centre → transparent edge: logo visible at cursor
-      mask = `radial-gradient(circle ${REVEAL_R}px at ${x}px ${y}px, black 0%, transparent 60%)`;
-    } else {
-      // Transparent centre → black edge: top-layer text hidden at cursor, reveal colour shows
-      mask = `radial-gradient(circle ${REVEAL_R}px at ${x}px ${y}px, transparent 0%, black 60%)`;
-    }
+    const mask = textRevealMask(clientX - r.left, clientY - r.top);
     el.style.webkitMaskImage = mask;
     el.style.maskImage = mask;
   };
 
+  const applyLogoReveal = (clientX: number, clientY: number) => {
+    const el = logoRevealRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const mask = logoRevealMask(clientX - r.left, clientY - r.top);
+    el.style.webkitMaskImage = mask;
+    el.style.maskImage = mask;
+  };
+
+  const applyRing = (clientX: number, clientY: number) => {
+    const el = logoRingRef.current;
+    const sect = sectionRef.current;
+    if (!el || !sect) return;
+    const r = sect.getBoundingClientRect();
+    // Ring is 350×350; centre it at cursor (subtract half = 175)
+    el.style.transform = `translate(${clientX - r.left - 175}px, ${clientY - r.top - 175}px)`;
+    el.style.opacity = '1';
+  };
+
   const resetMasks = () => {
     [sportsTopRef, designTopRef, japanTopRef].forEach(ref => {
-      if (ref.current) {
-        ref.current.style.webkitMaskImage = TEXT_MASK_OFF;
-        ref.current.style.maskImage = TEXT_MASK_OFF;
-      }
+      if (!ref.current) return;
+      ref.current.style.webkitMaskImage = TEXT_MASK_OFF;
+      ref.current.style.maskImage = TEXT_MASK_OFF;
     });
     if (logoRevealRef.current) {
       logoRevealRef.current.style.webkitMaskImage = LOGO_MASK_OFF;
       logoRevealRef.current.style.maskImage = LOGO_MASK_OFF;
     }
+    if (logoRingRef.current) {
+      logoRingRef.current.style.opacity = '0';
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    // Parallax
     const rect = sectionRef.current?.getBoundingClientRect();
     if (rect) {
       rawX.set((e.clientX - rect.left - rect.width  / 2) / rect.width);
       rawY.set((e.clientY - rect.top  - rect.height / 2) / rect.height);
     }
-    // Text colour reveal
-    setMask(sportsTopRef,  e.clientX, e.clientY, "hide-text");
-    setMask(designTopRef,  e.clientX, e.clientY, "hide-text");
-    setMask(japanTopRef,   e.clientX, e.clientY, "hide-text");
-    // Logo reveal
-    setMask(logoRevealRef, e.clientX, e.clientY, "reveal-logo");
+    applyTextMask(sportsTopRef, e.clientX, e.clientY);
+    applyTextMask(designTopRef, e.clientX, e.clientY);
+    applyTextMask(japanTopRef,  e.clientX, e.clientY);
+    applyLogoReveal(e.clientX, e.clientY);
+    applyRing(e.clientX, e.clientY);
   };
 
   const handleMouseLeave = () => {
@@ -115,23 +147,38 @@ export default function Hero() {
       onMouseMove={isFinePointer ? handleMouseMove : undefined}
       onMouseLeave={isFinePointer ? handleMouseLeave : undefined}
     >
-      {/*
-        ── Hidden logo — same centre as the concentric circles (50% / 50%),
-        sized to match the second ring (r=300 → 600px diameter).
-        Fully invisible by default; cursor reveal opens a soft mask hole.
-      */}
+      {/* ── Ghost logo — always faintly visible at 6%, hinting the mark is there ── */}
+      <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ width: 600, height: 600 }}>
+        <Image src="/brand/icon-512.png" fill alt="" aria-hidden className="object-contain opacity-[0.06]" />
+      </div>
+
+      {/* ── Reveal logo — full opacity, unmasked by cursor ── */}
       <div
         ref={logoRevealRef}
         aria-hidden="true"
         className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-        style={{
-          width: 600, height: 600,
-          WebkitMaskImage: LOGO_MASK_OFF,
-          maskImage: LOGO_MASK_OFF,
-        }}
+        style={{ width: 600, height: 600, WebkitMaskImage: LOGO_MASK_OFF, maskImage: LOGO_MASK_OFF }}
       >
         <Image src="/brand/icon-512.png" fill alt="" className="object-contain" />
       </div>
+
+      {/*
+        ── Ring accent — thin circle at the edge of the reveal.
+        Sits in the section coordinate space; translated to cursor via DOM.
+        Starts hidden (opacity-0), shown on first mousemove.
+        350×350 matches the reveal radius (175px).
+      */}
+      <div
+        ref={logoRingRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute left-0 top-0 rounded-full opacity-0"
+        style={{
+          width: 350, height: 350,
+          border: '1px solid rgba(0, 70, 255, 0.18)',
+          boxShadow: '0 0 0 1px rgba(0,70,255,0.05), inset 0 0 40px rgba(0,70,255,0.04)',
+          transition: 'opacity 0.3s ease',
+        }}
+      />
 
       {/* ── Concentric rings ── */}
       <motion.div
@@ -174,7 +221,7 @@ export default function Hero() {
       {/* ── Main layout ── */}
       <div className="flex flex-1 flex-col items-center justify-between px-4 pt-24 pb-6 sm:px-8 sm:pt-28">
 
-        {/* Top logo mark — 3D parallax */}
+        {/* Logo mark — 3D parallax */}
         <motion.div
           className="mt-4 sm:mt-6"
           style={isFinePointer ? { x: logoX, y: logoY, rotateX, rotateY, perspective: 700 } : {}}
@@ -189,10 +236,8 @@ export default function Hero() {
           />
         </motion.div>
 
-        {/* ── Type block — logo hidden behind, revealed at cursor ── */}
+        {/* ── Type block ── */}
         <div className="relative w-full text-center">
-
-          {/* Type — rendered above the logo in DOM order */}
           <h1 className="font-display uppercase tracking-[-0.04em] leading-[0.82]">
 
             {/* SPORTS — whisper, reveals accent blue */}
