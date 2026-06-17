@@ -72,6 +72,10 @@ export const work = {
       category: "Cinematic Film",
       year: "2023",
       timecode: "00:01:42:13",
+      media: {
+        video: "/video/work-season-hype.mp4",
+        poster: "/images/work-season-hype-poster.jpg",
+      },
     },
     {
       title: "Social Series — 30 Days of Training",
