@@ -3,17 +3,13 @@
 import { useEffect, useRef } from "react";
 import { useMediaQuery } from "@/lib/use-media-query";
 
-type Drop = { x: number; y: number; born: number };
-
-// How long (ms) the water takes to flow back after the cursor leaves
-const LIFE   = 1800;
-// Radius of the reveal circle at each cursor position
-const RADIUS = 110;
+// Simulation cell size in CSS pixels — smaller = smoother, heavier CPU
+const SCALE = 5;
+// Wave energy retention per physics step (1 = no decay, 0.98 = damps quickly)
+const DAMP  = 0.988;
 
 export default function WaterLayer() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const drops     = useRef<Drop[]>([]);
-  const frame     = useRef<number>(0);
+  const canvasRef     = useRef<HTMLCanvasElement>(null);
   const isFinePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
 
   useEffect(() => {
@@ -23,92 +19,122 @@ export default function WaterLayer() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let W = 0, H = 0;
+    let W = 0, H = 0, cols = 0, rows = 0;
+    let curr = new Float32Array(0);
+    let prev = new Float32Array(0);
+    let img: ImageData | null = null;
+    let raf = 0;
 
-    const resize = () => {
-      const dpr = window.devicePixelRatio || 1;
-      W = canvas.offsetWidth;
-      H = canvas.offsetHeight;
-      canvas.width  = W * dpr;
-      canvas.height = H * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const init = () => {
+      W    = canvas.offsetWidth;
+      H    = canvas.offsetHeight;
+      canvas.width  = W;
+      canvas.height = H;
+      // +2 = 1-cell border on each side (absorbing boundary)
+      cols = Math.floor(W / SCALE) + 2;
+      rows = Math.floor(H / SCALE) + 2;
+      curr = new Float32Array(cols * rows);
+      prev = new Float32Array(cols * rows);
+      img  = null; // recreated in draw()
     };
-    resize();
-    const ro = new ResizeObserver(resize);
+    init();
+    const ro = new ResizeObserver(init);
     ro.observe(canvas);
+
+    // Push a "water drop" disturbance into the grid at CSS coordinates
+    const disturb = (cssX: number, cssY: number) => {
+      const cx = Math.floor(cssX / SCALE) + 1;
+      const cy = Math.floor(cssY / SCALE) + 1;
+      const r  = 5; // radius in cells
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          const d  = Math.sqrt(dx * dx + dy * dy);
+          if (d > r) continue;
+          const nx = cx + dx, ny = cy + dy;
+          if (nx > 0 && nx < cols - 1 && ny > 0 && ny < rows - 1) {
+            curr[ny * cols + nx] = 350 * (1 - d / r);
+          }
+        }
+      }
+    };
 
     const onMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
-      drops.current.push({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-        born: performance.now(),
-      });
-      // Cap trail length
-      if (drops.current.length > 500) drops.current.splice(0, 100);
+      disturb(e.clientX - rect.left, e.clientY - rect.top);
     };
-
     canvas.addEventListener("mousemove", onMove);
 
     const draw = () => {
-      const now = performance.now();
-
-      ctx.clearRect(0, 0, W, H);
-
-      // ── Water surface — blue-tinted frosted overlay ──
-      ctx.fillStyle = "rgba(210, 228, 255, 0.78)";
-      ctx.fillRect(0, 0, W, H);
-
-      // Subtle horizontal shimmer lines — light refracting off water surface
-      ctx.save();
-      ctx.globalAlpha = 0.07;
-      ctx.strokeStyle = "rgb(80 140 255)";
-      ctx.lineWidth = 1;
-      const t = now * 0.00035;
-      for (let y = 0; y < H; y += 14) {
-        ctx.beginPath();
-        for (let x = 0; x <= W; x += 5) {
-          const wy = y + Math.sin(x * 0.025 + t + y * 0.012) * 5
-                       + Math.sin(x * 0.06  - t * 1.3)       * 2;
-          x === 0 ? ctx.moveTo(x, wy) : ctx.lineTo(x, wy);
+      // ── Pond ripple physics ──────────────────────────
+      // Each cell = average of 4 neighbours in previous frame, minus own previous
+      // value. Multiplied by damping to bleed energy. Creates circular wave rings.
+      for (let y = 1; y < rows - 1; y++) {
+        for (let x = 1; x < cols - 1; x++) {
+          const i = y * cols + x;
+          curr[i] = (
+            prev[i - 1] + prev[i + 1] +
+            prev[i - cols] + prev[i + cols]
+          ) / 2 - curr[i];
+          curr[i] *= DAMP;
         }
-        ctx.stroke();
       }
-      ctx.restore();
+      // Swap buffers
+      const tmp = prev; prev = curr; curr = tmp;
 
-      // ── Punch transparent holes where the cursor has passed ──
-      ctx.globalCompositeOperation = "destination-out";
+      // ── Pixel rendering via ImageData (avoids per-rect fillStyle overhead) ──
+      if (!img || img.width !== W || img.height !== H) {
+        img = ctx.createImageData(W, H);
+      }
+      const data = img.data;
 
-      const list = drops.current;
-      for (let i = list.length - 1; i >= 0; i--) {
-        const d   = list[i];
-        const age = now - d.born;
-        if (age > LIFE) { list.splice(i, 1); continue; }
+      for (let gy = 0; gy < rows - 2; gy++) {
+        for (let gx = 0; gx < cols - 2; gx++) {
+          const ci = (gy + 1) * cols + (gx + 1);
+          const h  = curr[ci];
 
-        const progress = age / LIFE;
-        // Slow to start fading, then accelerates — feels like water tension
-        const alpha = 1 - Math.pow(progress, 1.7);
-        const r     = RADIUS * (1 - progress * 0.12);
+          // Surface slope between neighbours → specular highlight intensity
+          const dX   = curr[ci + 1]    - curr[ci - 1];
+          const dY   = curr[ci + cols] - curr[ci - cols];
+          const spec = Math.min(1, Math.sqrt(dX * dX + dY * dY) / 340);
 
-        const g = ctx.createRadialGradient(d.x, d.y, 0, d.x, d.y, r);
-        g.addColorStop(0,    `rgba(0,0,0,${alpha})`);
-        g.addColorStop(0.45, `rgba(0,0,0,${alpha * 0.95})`);
-        g.addColorStop(0.75, `rgba(0,0,0,${alpha * 0.4})`);
-        g.addColorStop(1,    "rgba(0,0,0,0)");
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(d.x, d.y, r, 0, Math.PI * 2);
-        ctx.fill();
+          // Height normalised to [-1, 1] — crest vs trough
+          const hn    = Math.max(-1, Math.min(1, h / 280));
+
+          // Combined brightness: height pushes it bright/dark, slope adds white sheen
+          const blend = hn * 0.5 + spec * 0.9;
+
+          // Color mapping:
+          //   blend ≈ -0.5  → trough: dark blue, almost transparent (hero shows through)
+          //   blend ≈  0    → flat:   clear pool blue, 28% opacity
+          //   blend ≈ +0.5  → crest:  light blue, ~60% opacity
+          //   blend ≈ +1.4  → steep slope: pure white specular, ~100% opaque
+          const R = Math.round(Math.max(0, Math.min(255, 110 + blend * 145)));
+          const G = Math.round(Math.max(0, Math.min(255, 185 + blend * 70)));
+          const B = 255;
+          const A = Math.round(Math.max(0, Math.min(255, (0.26 + blend * 0.65) * 255)));
+
+          // Write this cell's colour to every pixel in the SCALE × SCALE block
+          const px0 = gx * SCALE, py0 = gy * SCALE;
+          for (let py = 0; py < SCALE && py0 + py < H; py++) {
+            for (let px = 0; px < SCALE && px0 + px < W; px++) {
+              const idx = ((py0 + py) * W + (px0 + px)) * 4;
+              data[idx]     = R;
+              data[idx + 1] = G;
+              data[idx + 2] = B;
+              data[idx + 3] = A;
+            }
+          }
+        }
       }
 
-      ctx.globalCompositeOperation = "source-over";
-      frame.current = requestAnimationFrame(draw);
+      ctx.putImageData(img, 0, 0);
+      raf = requestAnimationFrame(draw);
     };
 
-    frame.current = requestAnimationFrame(draw);
+    raf = requestAnimationFrame(draw);
 
     return () => {
-      cancelAnimationFrame(frame.current);
+      cancelAnimationFrame(raf);
       ro.disconnect();
       canvas.removeEventListener("mousemove", onMove);
     };
@@ -118,8 +144,7 @@ export default function WaterLayer() {
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      // Hidden on touch — mobile users see the hero directly (better UX)
-      className={`absolute inset-0 z-20 h-full w-full cursor-none ${
+      className={`absolute inset-0 z-20 h-full w-full cursor-crosshair ${
         isFinePointer ? "" : "pointer-events-none opacity-0"
       }`}
     />
