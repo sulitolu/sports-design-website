@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Poppins, Noto_Sans_JP, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import SmoothScroll from "@/components/smooth-scroll";
-import CustomCursor from "@/components/custom-cursor";
 import { LoadingProvider } from "@/components/loading-context";
 
 const poppins = Poppins({
@@ -83,7 +82,6 @@ export default function RootLayout({
       <body className="bg-ink text-paper antialiased">
         <LoadingProvider>
           <SmoothScroll>{children}</SmoothScroll>
-          <CustomCursor />
         </LoadingProvider>
       </body>
     </html>
