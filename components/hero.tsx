@@ -15,26 +15,24 @@ export default function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
   const isFinePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
 
-  // Normalized mouse -0.5 → +0.5 relative to section centre
   const rawX = useMotionValue(0);
   const rawY = useMotionValue(0);
   const mx = useSpring(rawX, { damping: 28, stiffness: 100, mass: 0.9 });
   const my = useSpring(rawY, { damping: 28, stiffness: 100, mass: 0.9 });
 
-  // Each layer gets a different multiplier → parallax depth
-  const circlesX  = useTransform(mx, v => v * 20);
-  const circlesY  = useTransform(my, v => v * 20);
-  const sportsX   = useTransform(mx, v => v * 30);
-  const sportsY   = useTransform(my, v => v * 22);
-  const designX   = useTransform(mx, v => v * 55);
-  const designY   = useTransform(my, v => v * 40);
-  const japanX    = useTransform(mx, v => v * 80);
-  const japanY    = useTransform(my, v => v * 58);
-  const logoX     = useTransform(mx, v => v * 120);
-  const logoY     = useTransform(my, v => v * 90);
-  // 3-D tilt on the logo mark
-  const rotateX   = useTransform(my, v => v * -22);
-  const rotateY   = useTransform(mx, v => v *  22);
+  // Parallax depth layers — larger multiplier = closer to viewer
+  const circlesX = useTransform(mx, v => v * 18);
+  const circlesY = useTransform(my, v => v * 18);
+  const sportsX  = useTransform(mx, v => v * 24);
+  const sportsY  = useTransform(my, v => v * 18);
+  const designX  = useTransform(mx, v => v * 44);
+  const designY  = useTransform(my, v => v * 34);
+  const japanX   = useTransform(mx, v => v * 64);
+  const japanY   = useTransform(my, v => v * 48);
+  const logoX    = useTransform(mx, v => v * 90);
+  const logoY    = useTransform(my, v => v * 70);
+  const rotateX  = useTransform(my, v => v * -18);
+  const rotateY  = useTransform(mx, v => v *  18);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
     const rect = sectionRef.current?.getBoundingClientRect();
@@ -44,143 +42,150 @@ export default function Hero() {
   };
   const handleMouseLeave = () => { rawX.set(0); rawY.set(0); };
 
-  const parallax = (x: typeof logoX, y: typeof logoY) =>
+  const px = (x: typeof logoX, y: typeof logoY) =>
     isFinePointer ? { x, y } : {};
 
   return (
     <section
       ref={sectionRef}
       id="top"
-      className="relative flex min-h-svh flex-col justify-end overflow-hidden border-b border-line bg-ink"
+      className="relative flex min-h-svh flex-col overflow-hidden border-b border-line bg-ink"
       onMouseMove={isFinePointer ? handleMouseMove : undefined}
       onMouseLeave={isFinePointer ? handleMouseLeave : undefined}
     >
-      {/* ── Concentric rings — breathe & parallax (deepest layer) ── */}
+      {/* ── Concentric rings ── */}
       <motion.div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0"
-        style={parallax(circlesX, circlesY)}
+        style={px(circlesX, circlesY)}
       >
         <svg className="h-full w-full" preserveAspectRatio="xMidYMid slice">
-          {[200, 320, 450, 600, 780, 980].map((r, i) => (
+          {[180, 300, 440, 600, 780, 980].map((r, i) => (
             <motion.circle
               key={r}
-              cx="50%"
-              cy="55%"
+              cx="50%" cy="50%"
               fill="none"
-              stroke="rgb(13 13 16 / 0.07)"
+              stroke="rgb(13 13 16 / 0.06)"
               strokeWidth="1"
               initial={{ r }}
-              animate={{ r: [r, r + 14, r] }}
-              transition={{
-                duration: 5 + i * 0.9,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: i * 0.5,
-              }}
+              animate={{ r: [r, r + 16, r] }}
+              transition={{ duration: 6 + i, repeat: Infinity, ease: "easeInOut", delay: i * 0.6 }}
             />
           ))}
         </svg>
       </motion.div>
 
-      {/* ── Top monogram ── */}
-      <motion.div
-        className="absolute left-1/2 -translate-x-1/2 pt-8"
-        initial={{ opacity: 0, y: -10 }}
-        animate={loaded ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.6, ease: EASE_OUT, delay: 0.05 }}
-      >
-        <Image
-          src="/brand/icon.png"
-          alt=""
-          aria-hidden
-          width={36}
-          height={36}
-          priority
-          className="h-7 w-7 opacity-40 sm:h-9 sm:w-9"
-        />
-      </motion.div>
-
-      {/* ── Main content ── */}
-      <div className="flex flex-1 flex-col items-center justify-start px-6 pt-28 pb-6 sm:px-10 sm:pt-36">
-
-        {/* Text — three depth layers */}
-        <div className="text-center">
-          <h1 className="font-display uppercase leading-[0.88] tracking-[-0.04em]">
-            <motion.span
-              className="block text-[clamp(3rem,12vw,10rem)] font-light text-paper/25"
-              style={parallax(sportsX, sportsY)}
-              initial={{ opacity: 0, y: 40 }}
-              animate={loaded ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 1, ease: EASE_OUT, delay: 0.12 }}
-            >
-              Sports
-            </motion.span>
-            <motion.span
-              className="block text-[clamp(3rem,12vw,10rem)] font-extrabold text-paper"
-              style={parallax(designX, designY)}
-              initial={{ opacity: 0, y: 40 }}
-              animate={loaded ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 1, ease: EASE_OUT, delay: 0.22 }}
-            >
-              Design
-            </motion.span>
-            <motion.span
-              className="block text-[clamp(3rem,12vw,10rem)] font-extrabold text-accent"
-              style={parallax(japanX, japanY)}
-              initial={{ opacity: 0, y: 40 }}
-              animate={loaded ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 1, ease: EASE_OUT, delay: 0.32 }}
-            >
-              Japan
-            </motion.span>
-          </h1>
-
-          <motion.p
-            className="mt-5 font-mono text-[10px] uppercase tracking-[0.35em] text-muted sm:text-xs"
-            initial={{ opacity: 0 }}
-            animate={loaded ? { opacity: 1 } : {}}
-            transition={{ duration: 0.9, ease: EASE_OUT, delay: 0.5 }}
-          >
-            映像制作 &nbsp;/&nbsp; アスリートブランディング
-          </motion.p>
-        </div>
-
-        {/* Logo mark — closest layer, parallax + 3-D tilt */}
+      {/* ── Top bar: monogram left, tagline right ── */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between px-6 pt-8 sm:px-10">
         <motion.div
-          className="mt-10 sm:mt-14"
+          initial={{ opacity: 0, y: -8 }}
+          animate={loaded ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, ease: EASE_OUT, delay: 0.05 }}
+        >
+          <Image
+            src="/brand/icon.png" alt="" aria-hidden
+            width={32} height={32} priority
+            className="h-7 w-7 opacity-40"
+          />
+        </motion.div>
+
+        <motion.p
+          className="font-mono text-[9px] uppercase tracking-[0.3em] text-muted sm:text-[10px]"
+          initial={{ opacity: 0 }}
+          animate={loaded ? { opacity: 1 } : {}}
+          transition={{ duration: 0.8, ease: EASE_OUT, delay: 0.2 }}
+        >
+          映像制作&nbsp;&nbsp;/&nbsp;&nbsp;Yokohama
+        </motion.p>
+      </div>
+
+      {/* ── Main layout: logo top-center, text fills lower 60% ── */}
+      <div className="flex flex-1 flex-col items-center justify-between px-4 pt-24 pb-6 sm:px-8 sm:pt-28">
+
+        {/* Logo mark — hero graphic, not a small monogram */}
+        <motion.div
+          className="mt-4 sm:mt-6"
           style={
             isFinePointer
               ? { x: logoX, y: logoY, rotateX, rotateY, perspective: 700 }
               : {}
           }
-          initial={{ opacity: 0, scale: 0.82 }}
+          initial={{ opacity: 0, scale: 0.78 }}
           animate={loaded ? { opacity: 1, scale: 1 } : {}}
-          transition={{ duration: 1.5, ease: EASE_OUT, delay: 0.3 }}
-          whileHover={{ scale: 1.06 }}
+          transition={{ duration: 1.6, ease: EASE_OUT, delay: 0.1 }}
         >
           <Image
             src="/brand/icon-512.png"
             alt="Sports Design Japan"
-            width={512}
-            height={512}
-            priority
-            className="h-[clamp(150px,32vw,300px)] w-[clamp(150px,32vw,300px)] drop-shadow-[0_8px_40px_rgba(0,70,255,0.15)]"
+            width={512} height={512} priority
+            className="h-[clamp(100px,18vw,200px)] w-[clamp(100px,18vw,200px)] drop-shadow-[0_4px_32px_rgba(0,70,255,0.12)]"
           />
         </motion.div>
+
+        {/* Type stack — extreme scale contrast is the impact */}
+        <div className="w-full text-center">
+          <h1 className="font-display uppercase tracking-[-0.04em] leading-[0.82]">
+
+            {/* SPORTS — whisper: very small, barely there */}
+            <motion.span
+              className="block text-[clamp(1.1rem,3.8vw,4rem)] font-light text-paper/20"
+              style={px(sportsX, sportsY)}
+              initial={{ opacity: 0, y: 20 }}
+              animate={loaded ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 1, ease: EASE_OUT, delay: 0.18 }}
+            >
+              Sports
+            </motion.span>
+
+            {/* DESIGN — dominant: fills the viewport width */}
+            <motion.span
+              className="block text-[clamp(4.5rem,22vw,22rem)] font-extrabold text-paper"
+              style={px(designX, designY)}
+              initial={{ opacity: 0, y: 32 }}
+              animate={loaded ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 1.1, ease: EASE_OUT, delay: 0.26 }}
+            >
+              Design
+            </motion.span>
+
+            {/* JAPAN — accent: medium, punchy blue */}
+            <motion.span
+              className="block text-[clamp(2.5rem,9.5vw,9.5rem)] font-extrabold text-accent"
+              style={px(japanX, japanY)}
+              initial={{ opacity: 0, y: 24 }}
+              animate={loaded ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 1, ease: EASE_OUT, delay: 0.34 }}
+            >
+              Japan
+            </motion.span>
+          </h1>
+
+          {/* Sub-label */}
+          <motion.p
+            className="mt-5 font-mono text-[9px] uppercase tracking-[0.35em] text-muted sm:text-[11px]"
+            initial={{ opacity: 0 }}
+            animate={loaded ? { opacity: 1 } : {}}
+            transition={{ duration: 0.9, ease: EASE_OUT, delay: 0.52 }}
+          >
+            アスリートブランディング
+          </motion.p>
+        </div>
+
+        {/* Spacer so the bottom bar isn't too crowded */}
+        <div />
       </div>
 
-      {/* ── Water layer — sits above all hero content, below the bottom bar ── */}
+      {/* ── Water layer ── */}
       <WaterLayer />
 
-      {/* ── Bottom bar — z-30 keeps it above the z-20 water canvas ── */}
+      {/* ── Bottom bar ── */}
       <motion.div
-        className="relative z-30 flex flex-col gap-6 border-t border-line bg-ink px-6 py-6 sm:flex-row sm:items-end sm:justify-between sm:px-10"
+        className="relative z-30 flex flex-col gap-4 border-t border-line bg-ink px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-10"
         initial={{ opacity: 0, y: 12 }}
         animate={loaded ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.8, ease: EASE_OUT, delay: 0.65 }}
       >
-        <p className="max-w-sm text-sm text-muted sm:text-base">
+        <p className="max-w-xs text-sm text-muted sm:text-base">
           {hero.tagline.en}
         </p>
         <ScrollIndicator label={hero.scrollLabel} />
