@@ -8,6 +8,7 @@ import { hero } from "@/data/content";
 import ScrollIndicator from "./scroll-indicator";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { EASE_OUT } from "@/lib/motion";
+import WaterLayer from "./water-layer";
 
 export default function Hero() {
   const { loaded } = useLoading();
@@ -50,7 +51,7 @@ export default function Hero() {
     <section
       ref={sectionRef}
       id="top"
-      className="relative flex min-h-svh flex-col justify-end overflow-hidden border-b border-line bg-paper"
+      className="relative flex min-h-svh flex-col justify-end overflow-hidden border-b border-line bg-ink"
       onMouseMove={isFinePointer ? handleMouseMove : undefined}
       onMouseLeave={isFinePointer ? handleMouseLeave : undefined}
     >
@@ -66,10 +67,10 @@ export default function Hero() {
               key={r}
               cx="50%"
               cy="55%"
-              r={r}
               fill="none"
-              stroke="rgb(244 243 239 / 0.055)"
+              stroke="rgb(13 13 16 / 0.07)"
               strokeWidth="1"
+              initial={{ r }}
               animate={{ r: [r, r + 14, r] }}
               transition={{
                 duration: 5 + i * 0.9,
@@ -96,7 +97,7 @@ export default function Hero() {
           width={36}
           height={36}
           priority
-          className="h-7 w-7 brightness-0 invert opacity-50 sm:h-9 sm:w-9"
+          className="h-7 w-7 opacity-40 sm:h-9 sm:w-9"
         />
       </motion.div>
 
@@ -107,7 +108,7 @@ export default function Hero() {
         <div className="text-center">
           <h1 className="font-display uppercase leading-[0.88] tracking-[-0.04em]">
             <motion.span
-              className="block text-[clamp(3rem,12vw,10rem)] font-light text-ink/40"
+              className="block text-[clamp(3rem,12vw,10rem)] font-light text-paper/25"
               style={parallax(sportsX, sportsY)}
               initial={{ opacity: 0, y: 40 }}
               animate={loaded ? { opacity: 1, y: 0 } : {}}
@@ -116,7 +117,7 @@ export default function Hero() {
               Sports
             </motion.span>
             <motion.span
-              className="block text-[clamp(3rem,12vw,10rem)] font-extrabold text-ink"
+              className="block text-[clamp(3rem,12vw,10rem)] font-extrabold text-paper"
               style={parallax(designX, designY)}
               initial={{ opacity: 0, y: 40 }}
               animate={loaded ? { opacity: 1, y: 0 } : {}}
@@ -164,14 +165,17 @@ export default function Hero() {
             width={512}
             height={512}
             priority
-            className="h-[clamp(150px,32vw,300px)] w-[clamp(150px,32vw,300px)] grayscale invert drop-shadow-[0_0_40px_rgba(0,70,255,0.25)]"
+            className="h-[clamp(150px,32vw,300px)] w-[clamp(150px,32vw,300px)] drop-shadow-[0_8px_40px_rgba(0,70,255,0.15)]"
           />
         </motion.div>
       </div>
 
-      {/* ── Bottom bar ── */}
+      {/* ── Water layer — sits above all hero content, below the bottom bar ── */}
+      <WaterLayer />
+
+      {/* ── Bottom bar — z-30 keeps it above the z-20 water canvas ── */}
       <motion.div
-        className="relative z-10 flex flex-col gap-6 border-t border-line bg-ink px-6 py-6 sm:flex-row sm:items-end sm:justify-between sm:px-10"
+        className="relative z-30 flex flex-col gap-6 border-t border-line bg-ink px-6 py-6 sm:flex-row sm:items-end sm:justify-between sm:px-10"
         initial={{ opacity: 0, y: 12 }}
         animate={loaded ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.8, ease: EASE_OUT, delay: 0.65 }}
