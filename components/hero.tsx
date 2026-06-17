@@ -8,7 +8,6 @@ import { hero } from "@/data/content";
 import ScrollIndicator from "./scroll-indicator";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { EASE_OUT } from "@/lib/motion";
-import WaterLayer from "./water-layer";
 
 // Cursor-reveal radius in CSS px
 const REVEAL_R = 120;
@@ -240,9 +239,6 @@ export default function Hero() {
 
         <div />
       </div>
-
-      {/* ── Water layer ── */}
-      <WaterLayer />
 
       {/* ── Bottom bar ── */}
       <motion.div
