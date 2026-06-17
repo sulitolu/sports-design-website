@@ -71,7 +71,6 @@ void main() {
   // ── Sample logo texture at this pixel ─────────────────────────────────────
   // Logo center in WebGL coords (y-flipped from CSS)
   vec2  logoC  = vec2(uLogoCx, uResolution.y - uLogoCy);
-  float half   = uLogoSize * 0.5;
   vec2  uv     = (px - logoC) / uLogoSize + 0.5;
   vec4  logo   = vec4(0.0);
   if (uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0) {
