@@ -47,7 +47,7 @@ void main() {
       float dy = px.y - p.y;
       float d2 = dx * dx + dy * dy + 1.0;
       // Radius: ~8% of canvas width, scales with strength
-      float r  = uResolution.x * 0.08 * s;
+      float r  = uResolution.x * 0.055 * s;
       float c  = s * r * r / d2;
       field   += c;
       gx      -= 2.0 * dx * c / d2;
