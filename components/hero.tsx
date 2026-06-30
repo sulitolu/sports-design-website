@@ -157,12 +157,12 @@ export default function Hero() {
         preserveAspectRatio="none"
       >
         {/* Each path: hangs below y=0 (the section bottom) into the next section */}
-        <path d="M 180 0 C 180 40 175 90 178 150 C 181 90 186 40 186 0 Z"  fill="rgba(0,70,255,0.10)" />
-        <path d="M 370 0 C 370 55 364 120 368 200 C 372 120 377 55 377 0 Z" fill="rgba(0,70,255,0.07)" />
-        <path d="M 620 0 C 620 35 615 75  618 120 C 621 75  625 35  625 0 Z" fill="rgba(0,70,255,0.09)" />
-        <path d="M 820 0 C 820 60 814 130 817 210 C 820 130 825 60  825 0 Z" fill="rgba(0,70,255,0.06)" />
-        <path d="M 1050 0 C 1050 45 1045 95 1048 155 C 1051 95 1055 45 1055 0 Z" fill="rgba(0,70,255,0.08)" />
-        <path d="M 1260 0 C 1260 38 1255 80 1258 130 C 1261 80 1265 38 1265 0 Z" fill="rgba(0,70,255,0.07)" />
+        <path d="M 180 0 C 180 40 175 90 178 150 C 181 90 186 40 186 0 Z"  fill="rgba(226,13,27,0.10)" />
+        <path d="M 370 0 C 370 55 364 120 368 200 C 372 120 377 55 377 0 Z" fill="rgba(226,13,27,0.07)" />
+        <path d="M 620 0 C 620 35 615 75  618 120 C 621 75  625 35  625 0 Z" fill="rgba(226,13,27,0.09)" />
+        <path d="M 820 0 C 820 60 814 130 817 210 C 820 130 825 60  825 0 Z" fill="rgba(226,13,27,0.06)" />
+        <path d="M 1050 0 C 1050 45 1045 95 1048 155 C 1051 95 1055 45 1055 0 Z" fill="rgba(226,13,27,0.08)" />
+        <path d="M 1260 0 C 1260 38 1255 80 1258 130 C 1261 80 1265 38 1265 0 Z" fill="rgba(226,13,27,0.07)" />
       </svg>
 
       {/* ── Top bar ── */}
@@ -198,7 +198,7 @@ export default function Hero() {
           <Image
             src="/brand/icon-512.png" alt="Sports Design Japan"
             width={512} height={512} priority
-            className="h-[clamp(100px,18vw,200px)] w-[clamp(100px,18vw,200px)] drop-shadow-[0_4px_32px_rgba(0,70,255,0.12)]"
+            className="h-[clamp(100px,18vw,200px)] w-[clamp(100px,18vw,200px)] drop-shadow-[0_4px_32px_rgba(226,13,27,0.12)]"
           />
         </motion.div>
 

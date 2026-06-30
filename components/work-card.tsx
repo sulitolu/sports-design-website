@@ -9,7 +9,7 @@ import { useMediaQuery } from "@/lib/use-media-query";
 const GRADIENTS = [
   "from-[#11131a] via-ink to-ink",
   "from-[#d6e4ff] via-ink to-ink",
-  "from-[#0046ff]/12 via-ink to-ink",
+  "from-[#E20D1B]/12 via-ink to-ink",
   "from-[#1c1f26] via-ink to-ink",
   "from-[#e3e8f5] via-ink to-ink",
   "from-[#15171d] via-ink to-ink",
