@@ -1,4 +1,5 @@
 import Preloader from "@/components/preloader";
+import CustomCursor from "@/components/custom-cursor";
 import Navbar from "@/components/navbar";
 import Hero from "@/components/hero";
 import Marquee from "@/components/marquee";
@@ -12,6 +13,7 @@ export default function Home() {
   return (
     <>
       <Preloader />
+      <CustomCursor />
       <Navbar />
       <main>
         <Hero />

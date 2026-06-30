@@ -3,11 +3,13 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useLoading } from "./loading-context";
+import { useMediaQuery } from "@/lib/use-media-query";
 import { hero } from "@/data/content";
 import { EASE_OUT } from "@/lib/motion";
 
 export default function Hero() {
   const { loaded } = useLoading();
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
 
   // Entrance is gated on the preloader finishing. Each element fades/rises in
   // on a small stagger. The global prefers-reduced-motion reset neutralizes
@@ -119,14 +121,32 @@ export default function Hero() {
                 filter: "drop-shadow(0 26px 44px rgba(13,13,16,0.42))",
               }}
             >
-              <Image
-                src={hero.media.poster}
-                alt={hero.media.title}
-                fill
-                priority
-                sizes="(max-width: 1024px) 100vw, 48vw"
-                className="object-cover"
-              />
+              {/* Cinematic media: a muted, looping clip that plays on load so
+                  the hero reads as motion, not a still. Under reduced-motion we
+                  fall back to the poster frame. */}
+              {reducedMotion ? (
+                <Image
+                  src={hero.media.poster}
+                  alt={hero.media.title}
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 48vw"
+                  className="object-cover"
+                />
+              ) : (
+                <video
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  poster={hero.media.poster}
+                  aria-label={hero.media.title}
+                  className="absolute inset-0 h-full w-full object-cover"
+                >
+                  <source src={hero.media.video} type="video/mp4" />
+                </video>
+              )}
               {/* Bottom darkening gradient so overlay text reads */}
               <div
                 aria-hidden
@@ -140,14 +160,6 @@ export default function Hero() {
                   className="h-2 w-2 rounded-full bg-accent animate-blink"
                 />
                 {hero.media.rec}&nbsp;&nbsp;{hero.media.timecode}
-              </div>
-
-              {/* Play disc (center) */}
-              <div className="absolute left-1/2 top-1/2 flex h-[74px] w-[74px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-ink/95 shadow-xl">
-                <span
-                  aria-hidden
-                  className="ml-1.5 block h-0 w-0 border-y-[11px] border-l-[17px] border-y-transparent border-l-paper"
-                />
               </div>
 
               {/* Caption (bottom-left) */}

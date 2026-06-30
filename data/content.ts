@@ -29,6 +29,7 @@ export const hero = {
   },
   media: {
     poster: "/images/hero-poster.jpg",
+    video: "/video/hero-loop.mp4",
     rec: "REC",
     timecode: "00:01:24:08",
     kicker: "Latest film",
