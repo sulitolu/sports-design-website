@@ -1,287 +1,180 @@
 "use client";
 
 import Image from "next/image";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { motion } from "framer-motion";
 import { useLoading } from "./loading-context";
 import { hero } from "@/data/content";
-import ScrollIndicator from "./scroll-indicator";
-import { useMediaQuery } from "@/lib/use-media-query";
 import { EASE_OUT } from "@/lib/motion";
-import WaxReveal from "./wax-reveal";
-
-// Text top-layer mask — black = fully visible (original colour)
-const TEXT_MASK_OFF = `radial-gradient(circle 0px at -9999px -9999px, transparent 0%, black 0%)`;
-
-// Punch a cursor-shaped hole in the top text layer so the colour below shows through.
-// Multi-stop approximates a smooth ease curve rather than a hard ring.
-const textRevealMask = (x: number, y: number) =>
-  `radial-gradient(circle at ${x}px ${y}px,
-    transparent  0px,
-    transparent  80px,
-    rgba(0,0,0,0.30) 100px,
-    rgba(0,0,0,0.72) 118px,
-    rgba(0,0,0,0.92) 130px,
-    black        145px
-  )`;
 
 export default function Hero() {
-  const { loaded }       = useLoading();
-  const sectionRef       = useRef<HTMLElement>(null);
-  const isFinePointer    = useMediaQuery("(hover: hover) and (pointer: fine)");
+  const { loaded } = useLoading();
 
-  // ── Parallax spring values ─────────────────────────────────────────────────
-  const rawX = useMotionValue(0);
-  const rawY = useMotionValue(0);
-  const mx   = useSpring(rawX, { damping: 28, stiffness: 100, mass: 0.9 });
-  const my   = useSpring(rawY, { damping: 28, stiffness: 100, mass: 0.9 });
-
-  const circlesX = useTransform(mx, v => v * 18);
-  const circlesY = useTransform(my, v => v * 18);
-  const sportsX  = useTransform(mx, v => v * 24);
-  const sportsY  = useTransform(my, v => v * 18);
-  const designX  = useTransform(mx, v => v * 44);
-  const designY  = useTransform(my, v => v * 34);
-  const japanX   = useTransform(mx, v => v * 64);
-  const japanY   = useTransform(my, v => v * 48);
-  const logoX    = useTransform(mx, v => v * 90);
-  const logoY    = useTransform(my, v => v * 70);
-  const rotateX  = useTransform(my, v => v * -18);
-  const rotateY  = useTransform(mx, v => v *  18);
-
-  const px = (x: typeof logoX, y: typeof logoY) =>
-    isFinePointer ? { x, y } : {};
-
-  // ── Refs for text colour-reveal (direct DOM, no re-renders) ───────────────
-  const sportsTopRef = useRef<HTMLSpanElement>(null);
-  const designTopRef = useRef<HTMLSpanElement>(null);
-  const japanTopRef  = useRef<HTMLSpanElement>(null);
-
-  const applyTextMask = (
-    ref: React.RefObject<HTMLSpanElement | null>,
-    cx: number, cy: number,
-  ) => {
-    const el = ref.current;
-    if (!el) return;
-    const r    = el.getBoundingClientRect();
-    const mask = textRevealMask(cx - r.left, cy - r.top);
-    el.style.webkitMaskImage = mask;
-    el.style.maskImage       = mask;
-  };
-
-  const resetTextMasks = () => {
-    [sportsTopRef, designTopRef, japanTopRef].forEach(ref => {
-      if (!ref.current) return;
-      ref.current.style.webkitMaskImage = TEXT_MASK_OFF;
-      ref.current.style.maskImage       = TEXT_MASK_OFF;
-    });
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    const rect = sectionRef.current?.getBoundingClientRect();
-    if (rect) {
-      rawX.set((e.clientX - rect.left - rect.width  / 2) / rect.width);
-      rawY.set((e.clientY - rect.top  - rect.height / 2) / rect.height);
-    }
-    applyTextMask(sportsTopRef, e.clientX, e.clientY);
-    applyTextMask(designTopRef, e.clientX, e.clientY);
-    applyTextMask(japanTopRef,  e.clientX, e.clientY);
-  };
-
-  const handleMouseLeave = () => {
-    rawX.set(0); rawY.set(0);
-    resetTextMasks();
-  };
+  // Entrance is gated on the preloader finishing. Each element fades/rises in
+  // on a small stagger. The global prefers-reduced-motion reset neutralizes
+  // these, and framer-motion respects an empty `animate` until `loaded`.
+  const rise = (delay: number) => ({
+    initial: { opacity: 0, y: 20 },
+    animate: loaded ? { opacity: 1, y: 0 } : {},
+    transition: { duration: 0.8, ease: EASE_OUT, delay },
+  });
 
   return (
-    /*
-      overflow-hidden removed: the decorative drip SVG at the bottom
-      uses overflow:visible to let drip tips peek into the next section.
-    */
     <section
-      ref={sectionRef}
       id="top"
-      className="relative flex min-h-svh flex-col border-b border-line bg-ink overflow-x-clip"
-      onMouseMove={isFinePointer ? handleMouseMove : undefined}
-      onMouseLeave={isFinePointer ? handleMouseLeave : undefined}
+      className="relative border-b border-line bg-ink"
+      style={{ scrollMarginTop: 70 }}
     >
-      {/* ── Ghost logo — 6% opacity, always faintly present ── */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-1/2 z-[1] -translate-x-1/2 -translate-y-1/2 w-[min(600px,88vw)] h-[min(600px,88vw)]"
-      >
-        <Image
-          src="/brand/icon-512.png" fill alt=""
-          className="object-contain opacity-[0.06]"
-        />
-      </div>
-
-      {/*
-        ── WaxReveal canvas (z-[6]) ──
-        Draws the logo inside Bézier wax-drip shapes at the cursor trail.
-        Pool at cursor + teardrop tail hanging down, growing over time.
-        Uses destination-in composite so logo appears only inside wax shapes.
-      */}
-      <WaxReveal />
-
-      {/* ── Concentric breathing rings ── */}
-      <motion.div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-[7]"
-        style={px(circlesX, circlesY)}
-      >
-        <svg className="h-full w-full" preserveAspectRatio="xMidYMid slice">
-          {[180, 300, 440, 600, 780, 980].map((r, i) => (
-            <motion.circle
-              key={r} cx="50%" cy="50%"
-              fill="none" stroke="rgb(13 13 16 / 0.06)" strokeWidth="1"
-              initial={{ r }}
-              animate={{ r: [r, r + 16, r] }}
-              transition={{ duration: 6 + i, repeat: Infinity, ease: "easeInOut", delay: i * 0.6 }}
+      <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 py-20 sm:px-10 sm:py-24 lg:min-h-[calc(100svh-67px)] lg:grid-cols-[1.05fr_0.95fr]">
+        {/* ── Left: text column ── */}
+        <div>
+          {/* Eyebrow: live red dot + location */}
+          <motion.div className="flex items-center gap-3" {...rise(0.05)}>
+            <span
+              aria-hidden
+              className="h-2 w-2 rounded-full bg-accent animate-blink"
             />
-          ))}
-        </svg>
-      </motion.div>
+            <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-muted sm:text-[11px]">
+              {hero.eyebrow}
+            </span>
+          </motion.div>
 
-      {/*
-        ── Permanent drip decoration ──
-        Teardrop SVG paths at the hero's bottom edge.
-        overflow: visible lets the tips bleed past the section border-b
-        into the section below — the visual anchor for "dripping to page 2".
-      */}
-      <svg
-        aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 left-0 z-[8] w-full overflow-visible"
-        style={{ height: 0 }}
-        viewBox="0 0 1440 0"
-        preserveAspectRatio="none"
-      >
-        {/* Each path: hangs below y=0 (the section bottom) into the next section */}
-        <path d="M 180 0 C 180 40 175 90 178 150 C 181 90 186 40 186 0 Z"  fill="rgba(226,13,27,0.10)" />
-        <path d="M 370 0 C 370 55 364 120 368 200 C 372 120 377 55 377 0 Z" fill="rgba(226,13,27,0.07)" />
-        <path d="M 620 0 C 620 35 615 75  618 120 C 621 75  625 35  625 0 Z" fill="rgba(226,13,27,0.09)" />
-        <path d="M 820 0 C 820 60 814 130 817 210 C 820 130 825 60  825 0 Z" fill="rgba(226,13,27,0.06)" />
-        <path d="M 1050 0 C 1050 45 1045 95 1048 155 C 1051 95 1055 45 1055 0 Z" fill="rgba(226,13,27,0.08)" />
-        <path d="M 1260 0 C 1260 38 1255 80 1258 130 C 1261 80 1265 38 1265 0 Z" fill="rgba(226,13,27,0.07)" />
-      </svg>
-
-      {/* ── Top bar ── */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between px-6 pt-8 sm:px-10">
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={loaded ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, ease: EASE_OUT, delay: 0.05 }}
-        >
-          <Image src="/brand/icon.png" alt="" aria-hidden width={32} height={32} priority className="h-7 w-7 opacity-40" />
-        </motion.div>
-        <motion.p
-          className="font-mono text-[9px] uppercase tracking-[0.3em] text-muted sm:text-[10px]"
-          initial={{ opacity: 0 }}
-          animate={loaded ? { opacity: 1 } : {}}
-          transition={{ duration: 0.8, ease: EASE_OUT, delay: 0.2 }}
-        >
-          映像制作&nbsp;&nbsp;/&nbsp;&nbsp;Yokohama
-        </motion.p>
-      </div>
-
-      {/* ── Main layout — z-10 sits above rings/canvas ── */}
-      <div className="relative z-10 flex flex-1 flex-col items-center justify-between px-4 pt-24 pb-6 sm:px-8 sm:pt-28">
-
-        {/* Logo mark — 3D parallax tilt */}
-        <motion.div
-          className="mt-4 sm:mt-6"
-          style={isFinePointer ? { x: logoX, y: logoY, rotateX, rotateY, perspective: 700 } : {}}
-          initial={{ opacity: 0, scale: 0.78 }}
-          animate={loaded ? { opacity: 1, scale: 1 } : {}}
-          transition={{ duration: 1.6, ease: EASE_OUT, delay: 0.1 }}
-        >
-          <Image
-            src="/brand/icon-512.png" alt="Sports Design Japan"
-            width={512} height={512} priority
-            className="h-[clamp(100px,18vw,200px)] w-[clamp(100px,18vw,200px)] drop-shadow-[0_4px_32px_rgba(226,13,27,0.12)]"
-          />
-        </motion.div>
-
-        {/* Type block */}
-        <div className="w-full text-center">
-          <h1 className="font-display uppercase tracking-[-0.04em] leading-[0.82]">
-
-            {/* SPORTS — whisper; cursor reveals accent blue */}
-            <motion.div
-              className="relative block"
-              style={px(sportsX, sportsY)}
-              initial={{ opacity: 0, y: 20 }}
-              animate={loaded ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 1, ease: EASE_OUT, delay: 0.18 }}
+          {/* Headline stack */}
+          <h1
+            className="mt-6 font-display tracking-[-0.04em]"
+            style={{ lineHeight: 0.84 }}
+          >
+            <motion.span
+              className="block font-light text-[clamp(1.6rem,3.4vw,2.9rem)]"
+              style={{ color: "rgba(13,13,16,0.34)" }}
+              {...rise(0.12)}
             >
-              <span aria-hidden className="pointer-events-none absolute inset-0 block text-[clamp(1.1rem,3.8vw,4rem)] font-light text-accent">
-                Sports
-              </span>
-              <span ref={sportsTopRef} className="relative block text-[clamp(1.1rem,3.8vw,4rem)] font-light text-paper/20"
-                style={{ WebkitMaskImage: TEXT_MASK_OFF, maskImage: TEXT_MASK_OFF }}>
-                Sports
-              </span>
-            </motion.div>
-
-            {/* DESIGN — dominant; cursor reveals accent blue */}
-            <motion.div
-              className="relative block"
-              style={px(designX, designY)}
-              initial={{ opacity: 0, y: 32 }}
-              animate={loaded ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 1.1, ease: EASE_OUT, delay: 0.26 }}
+              {hero.lines.sports}
+            </motion.span>
+            <motion.span
+              className="block font-extrabold text-paper text-[clamp(3.4rem,7vw,6.4rem)]"
+              {...rise(0.18)}
             >
-              <span aria-hidden className="pointer-events-none absolute inset-0 block text-[clamp(4.5rem,22vw,22rem)] font-extrabold text-accent">
-                Design
-              </span>
-              <span ref={designTopRef} className="relative block text-[clamp(4.5rem,22vw,22rem)] font-extrabold text-paper"
-                style={{ WebkitMaskImage: TEXT_MASK_OFF, maskImage: TEXT_MASK_OFF }}>
-                Design
-              </span>
-            </motion.div>
-
-            {/* JAPAN — accent blue; cursor dissolves to cream */}
-            <motion.div
-              className="relative block"
-              style={px(japanX, japanY)}
-              initial={{ opacity: 0, y: 24 }}
-              animate={loaded ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 1, ease: EASE_OUT, delay: 0.34 }}
+              {hero.lines.design}
+            </motion.span>
+            <motion.span
+              className="block font-extrabold text-accent text-[clamp(3.4rem,7vw,6.4rem)]"
+              {...rise(0.24)}
             >
-              <span aria-hidden className="pointer-events-none absolute inset-0 block text-[clamp(2.5rem,9.5vw,9.5rem)] font-extrabold text-ink">
-                Japan
-              </span>
-              <span ref={japanTopRef} className="relative block text-[clamp(2.5rem,9.5vw,9.5rem)] font-extrabold text-accent"
-                style={{ WebkitMaskImage: TEXT_MASK_OFF, maskImage: TEXT_MASK_OFF }}>
-                Japan
-              </span>
-            </motion.div>
-
+              {hero.lines.japan}
+            </motion.span>
           </h1>
 
+          {/* Lead — "inside the game" emphasized in near-black */}
           <motion.p
-            className="mt-5 font-mono text-[9px] uppercase tracking-[0.35em] text-muted sm:text-[11px]"
-            initial={{ opacity: 0 }}
-            animate={loaded ? { opacity: 1 } : {}}
-            transition={{ duration: 0.9, ease: EASE_OUT, delay: 0.52 }}
+            className="mt-7 max-w-[30rem] text-[clamp(1.05rem,1.5vw,1.25rem)] leading-[1.55] text-muted"
+            {...rise(0.32)}
           >
-            アスリートブランディング
+            {hero.lead.pre}
+            <span className="font-semibold text-paper">
+              {hero.lead.emphasis}
+            </span>
+            {hero.lead.post}
           </motion.p>
+
+          {/* CTAs */}
+          <motion.div
+            className="mt-9 flex flex-wrap items-center gap-4"
+            {...rise(0.4)}
+          >
+            <a
+              href={hero.ctas.primary.href}
+              className="group inline-flex items-center gap-2 bg-paper px-7 py-3.5 font-mono text-[11px] uppercase tracking-[0.2em] text-ink transition-colors duration-300 hover:bg-accent"
+            >
+              {hero.ctas.primary.label}
+              <span
+                aria-hidden
+                className="transition-transform duration-300 group-hover:translate-x-1"
+              >
+                →
+              </span>
+            </a>
+            <a
+              href={hero.ctas.secondary.href}
+              className="inline-flex items-center border border-line-strong px-7 py-3.5 font-mono text-[11px] uppercase tracking-[0.2em] text-paper transition-colors duration-300 hover:border-accent hover:text-accent"
+            >
+              {hero.ctas.secondary.label}
+            </a>
+          </motion.div>
         </div>
 
-        <div />
+        {/* ── Right: cinematic media card ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={loaded ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 1, ease: EASE_OUT, delay: 0.2 }}
+        >
+          <div className="relative aspect-[4/5] w-full">
+            {/* Clipped media layer — the diagonal cut + a drop-shadow that
+                follows the clipped silhouette (box-shadow would square it off). */}
+            <div
+              data-cursor="view"
+              className="absolute inset-0 overflow-hidden bg-paper"
+              style={{
+                clipPath: "polygon(0 0, 100% 0, 100% 94%, 0 100%)",
+                filter: "drop-shadow(0 26px 44px rgba(13,13,16,0.42))",
+              }}
+            >
+              <Image
+                src={hero.media.poster}
+                alt={hero.media.title}
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 48vw"
+                className="object-cover"
+              />
+              {/* Bottom darkening gradient so overlay text reads */}
+              <div
+                aria-hidden
+                className="absolute inset-0 bg-gradient-to-t from-paper/80 via-paper/10 to-transparent"
+              />
+
+              {/* REC timecode (top-left) */}
+              <div className="absolute left-5 top-5 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-ink">
+                <span
+                  aria-hidden
+                  className="h-2 w-2 rounded-full bg-accent animate-blink"
+                />
+                {hero.media.rec}&nbsp;&nbsp;{hero.media.timecode}
+              </div>
+
+              {/* Play disc (center) */}
+              <div className="absolute left-1/2 top-1/2 flex h-[74px] w-[74px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-ink/95 shadow-xl">
+                <span
+                  aria-hidden
+                  className="ml-1.5 block h-0 w-0 border-y-[11px] border-l-[17px] border-y-transparent border-l-paper"
+                />
+              </div>
+
+              {/* Caption (bottom-left) */}
+              <div className="absolute bottom-7 left-5">
+                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/70">
+                  {hero.media.kicker}
+                </p>
+                <p className="mt-1 font-display text-lg font-bold uppercase tracking-tight text-ink">
+                  {hero.media.title}
+                </p>
+              </div>
+            </div>
+
+            {/* Red corner tab — lives outside the clipped layer so the diagonal
+                cut doesn't remove it; it nests into the cut bottom-right corner. */}
+            <div className="absolute bottom-0 right-0 bg-accent px-4 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-ink">
+              {hero.media.tab}
+            </div>
+          </div>
+        </motion.div>
       </div>
 
-      {/* ── Bottom bar ── */}
-      <motion.div
-        className="relative z-30 flex flex-col gap-4 border-t border-line bg-ink px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-10"
-        initial={{ opacity: 0, y: 12 }}
-        animate={loaded ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.8, ease: EASE_OUT, delay: 0.65 }}
-      >
-        <p className="max-w-xs text-sm text-muted sm:text-base">{hero.tagline.en}</p>
-        <ScrollIndicator label={hero.scrollLabel} />
-      </motion.div>
+      {/* ── Below-grid meta row ── */}
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 pb-6 font-mono text-[10px] uppercase tracking-[0.2em] text-muted sm:px-10">
+        <span className="font-jp">{hero.branding}</span>
+        <span>{hero.scrollLabel} —</span>
+      </div>
     </section>
   );
 }

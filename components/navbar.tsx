@@ -42,34 +42,54 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-line bg-ink/80 backdrop-blur-sm">
+      <header className="sticky top-0 z-50 border-b border-line bg-ink/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 sm:px-10">
-          <a href="#top" className="flex items-center" aria-label={nav.wordmark}>
+          <a
+            href="#top"
+            className="flex items-center gap-3"
+            aria-label={nav.wordmark}
+          >
             <Image
-              src="/brand/icon.png"
+              src="/brand/icon-512.png"
               alt=""
-              width={36}
-              height={36}
+              width={38}
+              height={38}
               priority
-              className="h-8 w-8 sm:h-9 sm:w-9"
+              className="h-[34px] w-[34px] object-contain sm:h-[38px] sm:w-[38px]"
             />
+            <span className="hidden flex-col leading-none sm:flex">
+              <span className="font-display text-[13px] font-extrabold uppercase tracking-[-0.01em] text-paper">
+                {nav.wordmark}
+              </span>
+              <span className="mt-1 font-jp text-[9.5px] tracking-[0.18em] text-muted">
+                {nav.wordmarkJp}
+              </span>
+            </span>
           </a>
 
-          <nav
-            className="hidden items-center gap-8 font-mono text-xs uppercase tracking-[0.2em] text-paper md:flex"
-            aria-label="Primary"
-          >
-            {nav.links.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="group relative py-1 transition-colors hover:text-accent"
-              >
-                {link.label}
-                <span className="absolute bottom-0 left-0 h-px w-0 bg-accent transition-all duration-300 group-hover:w-full" />
-              </a>
-            ))}
-          </nav>
+          <div className="hidden items-center gap-8 md:flex">
+            <nav
+              className="flex items-center gap-8 font-mono text-[11px] uppercase tracking-[0.2em] text-paper"
+              aria-label="Primary"
+            >
+              {nav.links.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="group relative py-1 transition-colors hover:text-accent"
+                >
+                  {link.label}
+                  <span className="absolute bottom-0 left-0 h-px w-0 bg-accent transition-all duration-300 group-hover:w-full" />
+                </a>
+              ))}
+            </nav>
+            <a
+              href={nav.cta.href}
+              className="inline-flex items-center bg-accent px-5 py-2.5 font-mono text-[11px] uppercase tracking-[0.2em] text-ink transition-colors duration-300 hover:bg-paper"
+            >
+              {nav.cta.label}
+            </a>
+          </div>
 
           <button
             type="button"

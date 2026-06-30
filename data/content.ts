@@ -3,6 +3,7 @@
 
 export const nav = {
   wordmark: "SPORTS DESIGN JAPAN",
+  wordmarkJp: "スポーツ デザイン",
   shortmark: "SDJ",
   links: [
     { label: "Work", jp: "制作実績", href: "#work" },
@@ -11,15 +12,31 @@ export const nav = {
     { label: "Athletes", jp: "選手", href: "#athletes" },
     { label: "Contact", jp: "お問い合わせ", href: "#contact" },
   ],
+  cta: { label: "Start a project", href: "#contact" },
 };
 
 export const hero = {
-  lines: ["SPORTS", "DESIGN", "JAPAN"],
-  tagline: {
-    en: "Cinematic sports media & athlete branding, built from inside the game.",
-    jp: "映像制作 / アスリートブランディング",
+  eyebrow: "映像制作 / Yokohama, Japan",
+  lines: { sports: "Sports", design: "Design", japan: "Japan" },
+  lead: {
+    pre: "Cinematic sports media & athlete branding, built from ",
+    emphasis: "inside the game",
+    post: " — not from the sidelines.",
   },
-  scrollLabel: "SCROLL",
+  ctas: {
+    primary: { label: "View the work", href: "#work" },
+    secondary: { label: "Get in touch", href: "#contact" },
+  },
+  media: {
+    poster: "/images/hero-poster.jpg",
+    rec: "REC",
+    timecode: "00:01:24:08",
+    kicker: "Latest film",
+    title: "Match Day Cinematic",
+    tab: "Sony Cinema · 4K",
+  },
+  branding: "アスリートブランディング",
+  scrollLabel: "Scroll",
 };
 
 export const marquee = {
