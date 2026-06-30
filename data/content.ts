@@ -163,6 +163,19 @@ export const services = {
         "Cutdowns for every platform",
       ],
     },
+    {
+      index: "04",
+      title: "Personal Athlete Website",
+      jp: "アスリート個人サイト",
+      summary:
+        "A custom website built around you — your story, your stats, your brand. Designed to impress scouts, sponsors, and fans.",
+      details: [
+        "Custom design & build",
+        "Bio, stats & highlight reel",
+        "Sponsor & media kit page",
+        "Mobile-ready & fast",
+      ],
+    },
   ] satisfies Service[],
 };
 
