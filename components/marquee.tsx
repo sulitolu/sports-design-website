@@ -17,9 +17,10 @@ function MarqueeItems({ ariaHidden }: { ariaHidden?: boolean }) {
           >
             {item}
           </span>
-          <span className="text-2xl text-accent sm:text-4xl" aria-hidden="true">
-            —
-          </span>
+          <span
+            className="block h-[9px] w-[9px] rotate-45 bg-accent"
+            aria-hidden="true"
+          />
         </span>
       ))}
     </div>

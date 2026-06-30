@@ -4,23 +4,21 @@ import { Reveal, RevealGroup, RevealItem } from "./reveal";
 
 export default function Athletes() {
   return (
-    <section
-      id="athletes"
-      className="mx-auto max-w-7xl px-6 py-24 sm:px-10 sm:py-32"
-    >
+    <section id="athletes" className="bg-paper text-ink">
+      <div className="mx-auto max-w-7xl px-6 py-24 sm:px-10 sm:py-32">
       <Reveal className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.3em] text-accent">
             {athletes.eyebrow}
           </p>
-          <h2 className="mt-4 font-display text-5xl font-extrabold uppercase tracking-[-0.04em] leading-[0.95] text-paper sm:text-7xl lg:text-8xl">
+          <h2 className="mt-4 font-display text-5xl font-extrabold uppercase tracking-[-0.04em] leading-[0.95] text-ink sm:text-7xl lg:text-8xl">
             {athletes.heading.en}
-            <span className="ml-4 align-middle font-jp text-lg font-normal text-muted">
+            <span className="ml-4 align-middle font-jp text-lg font-normal text-muted-dark">
               {athletes.heading.jp}
             </span>
           </h2>
         </div>
-        <p className="max-w-sm text-sm text-muted sm:text-base">
+        <p className="max-w-sm text-sm text-muted-dark sm:text-base">
           {athletes.intro}
         </p>
       </Reveal>
@@ -28,7 +26,7 @@ export default function Athletes() {
       <RevealGroup className="mt-12 grid grid-cols-2 gap-4 sm:mt-16 sm:grid-cols-3 sm:gap-6 lg:grid-cols-5 [&>*:last-child:nth-child(odd)]:col-span-2 [&>*:last-child:nth-child(odd)]:mx-auto [&>*:last-child:nth-child(odd)]:w-1/2 sm:[&>*:last-child:nth-child(odd)]:col-span-1 sm:[&>*:last-child:nth-child(odd)]:w-full sm:[&>*:last-child:nth-child(odd)]:mx-0">
         {athletes.roster.map((athlete) => (
           <RevealItem key={athlete.name}>
-            <div className="group relative aspect-[1000/1777] overflow-hidden rounded-sm bg-ink">
+            <div className="group relative aspect-[1000/1777] overflow-hidden rounded-sm bg-paper">
               <Image
                 src={athlete.photo}
                 alt={`${athlete.name} — ${athlete.position}, NEC Green Rockets`}
@@ -38,16 +36,17 @@ export default function Athletes() {
               />
             </div>
             <div className="mt-4">
-              <p className="font-display text-lg font-bold uppercase tracking-tight text-paper">
+              <p className="font-display text-lg font-bold uppercase tracking-tight text-ink">
                 {athlete.name}
               </p>
-              <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
+              <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-dark">
                 {athlete.position}
               </p>
             </div>
           </RevealItem>
         ))}
       </RevealGroup>
+      </div>
     </section>
   );
 }

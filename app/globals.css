@@ -6,8 +6,10 @@
   --color-paper: #0d0d10;
   --color-accent: #E20D1B;
   --color-muted: #6b6b70;
+  --color-muted-dark: #8a8a90;
   --color-line: rgb(13 13 16 / 10%);
   --color-line-strong: rgb(13 13 16 / 22%);
+  --color-line-dark: rgb(244 243 239 / 12%);
 
   /* Type tokens */
   --font-display: var(--font-poppins), "Helvetica Neue", Arial, sans-serif;
